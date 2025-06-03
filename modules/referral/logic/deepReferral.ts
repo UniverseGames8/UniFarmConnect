@@ -160,9 +160,9 @@ export class DeepReferralLogic {
       const daysSinceActivity = (Date.now() - referredUserLastActivity.getTime()) / (1000 * 60 * 60 * 24);
       
       // Реферал считается активным, если:
-      // 1. Прошло не более 90 дней с момента регистрации по рефералу
-      // 2. Пользователь был активен в последние 30 дней
-      return daysSinceReferral <= 90 && daysSinceActivity <= 30;
+      // 1. Прошло не более 365 дней с момента регистрации по рефералу
+      // 2. Пользователь был активен в последние 365 дней
+      return daysSinceReferral <= 365 && daysSinceActivity <= 365;
     } catch (error) {
       console.error('[DeepReferral] Ошибка проверки активности реферала:', error);
       return false;
