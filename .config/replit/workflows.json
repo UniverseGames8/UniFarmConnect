@@ -1,0 +1,32 @@
+{
+  "workflows": {
+    "start-app": {
+      "name": "Start App with Replit PostgreSQL",
+      "onlyRunOnReopen": false,
+      "restartOn": {},
+      "restartOnFiles": ["**/*.js", "**/*.ts"],
+      "command": ["node", "start-unified.cjs"]
+    },
+    "setup-postgres": {
+      "name": "Setup PostgreSQL Database",
+      "onlyRunOnReopen": false,
+      "restartOn": {},
+      "restartOnFiles": [],
+      "command": ["bash", "./start-postgres.sh"]
+    },
+    "migrate-schema": {
+      "name": "Migrate Database Schema",
+      "onlyRunOnReopen": false,
+      "restartOn": {},
+      "restartOnFiles": [],
+      "command": ["node", "migrate-direct.cjs"]
+    },
+    "create-partitions": {
+      "name": "Setup Partitioned Tables",
+      "onlyRunOnReopen": false,
+      "restartOn": {},
+      "restartOnFiles": [],
+      "command": ["node", "fix-partition-schema.cjs"]
+    }
+  }
+}
