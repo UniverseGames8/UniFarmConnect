@@ -15,5 +15,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true
+  },
+  server: {
+    port: 3000
+  },
+  optimizeDeps: {
+    include: ['@types/node']
   }
 });
