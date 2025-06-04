@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Transaction, fetchTonTransactions } from '@/services/transactionService';
 import { useUser } from '@/contexts/userContext';
-import { formatAmount, formatDate } from '@/utils/formatters';
 import TransactionItem from './TransactionItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';

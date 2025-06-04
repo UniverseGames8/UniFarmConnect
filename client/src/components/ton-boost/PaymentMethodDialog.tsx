@@ -14,7 +14,6 @@ import { useTonConnectUI } from '@tonconnect/ui-react';
 import { useUser } from '@/contexts/userContext';
 // Обновлено: используем tonConnectService вместо simpleTonTransaction
 import { 
-  isTonWalletConnected, 
   isTonPaymentReady, 
   sendTonTransaction,
   createTonTransactionComment 
@@ -93,7 +92,16 @@ const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
         
         // Вызываем sendTonTransaction с проверенной суммой
         // Используем nanoAmount вместо boostPriceTon для передачи точной суммы в sendTonTransaction
-        const result = await sendTonTransaction(tonConnectUI, String(tonAmount), comment);
+        const transactionRequest = {
+          validUntil: Math.floor(Date.now() / 1000) + 600,
+          messages: [
+            {
+              address: 'EQD...', // Replace with actual address
+              amount: nanoAmount, // nanoTON
+            },
+          ],
+        };
+        const result = await sendTonTransaction(tonConnectUI, transactionRequest, comment);
         
         console.log("[TON] Результат транзакции:", result);
         

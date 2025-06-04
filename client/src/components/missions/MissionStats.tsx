@@ -27,14 +27,14 @@ const MissionStats: React.FC = () => {
       );
       
       if (!response.success) {
-        throw new Error(response.message || 'Не удалось загрузить статистику миссий');
+        throw new Error('Не удалось загрузить статистику миссий');
       }
       
       return response.data;
     },
   });
 
-  const percentage = data ? Math.round((data.completed / Math.max(data.total, 1)) * 100) : 0;
+  const percentage = data ? Math.round((data.data.completed / Math.max(data.data.total, 1)) * 100) : 0;
 
   if (isLoading) {
     return (
@@ -92,14 +92,14 @@ const MissionStats: React.FC = () => {
           </div>
           <div className="space-y-1">
             <p className="text-sm">
-              <span className="font-medium">{data?.completed || 0}</span> из{' '}
-              <span className="font-medium">{data?.total || 0}</span> миссий выполнено
+              <span className="font-medium">{data?.data.completed || 0}</span> из{' '}
+              <span className="font-medium">{data?.data.total || 0}</span> миссий выполнено
             </p>
             <p className="text-sm">
-              Заработано: <span className="font-medium">{data?.userPoints || 0} UNI</span>
+              Заработано: <span className="font-medium">{data?.data.userPoints || 0} UNI</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Доступно ещё: <span className="font-medium">{data?.totalAvailable || 0} UNI</span>
+              Доступно ещё: <span className="font-medium">{data?.data.totalAvailable || 0} UNI</span>
             </p>
           </div>
         </div>

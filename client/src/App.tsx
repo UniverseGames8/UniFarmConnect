@@ -3,8 +3,6 @@ import { AuthProvider } from '@/modules/auth/context/AuthContext';
 import { WebSocketProvider } from '@/shared/context/WebSocketContext';
 import { NotificationProvider } from '@/shared/context/NotificationContext';
 import { TelegramCheck } from '@/modules/auth/components/TelegramCheck';
-import { TelegramAuth } from '@/modules/auth/components/TelegramAuth';
-import { ProtectedRoute } from '@/modules/auth/components/ProtectedRoute';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 import { Dashboard } from '@/modules/dashboard/pages/Dashboard';
 import { Farming } from '@/modules/farming/pages/Farming';

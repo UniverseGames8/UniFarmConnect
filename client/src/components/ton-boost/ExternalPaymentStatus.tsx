@@ -9,7 +9,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, ExternalLink, Wallet } from "lucide-react";
+import { CheckCircle2, Loader2, Wallet } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 
 interface ExternalPaymentStatusProps {
@@ -66,12 +66,6 @@ const ExternalPaymentStatus: React.FC<ExternalPaymentStatusProps> = ({
       setCheckCounter(prev => prev + 1);
     }
   }, [data, boostName, onPaymentComplete, toast, open, paymentProcessed]);
-  
-  // Больше не используем прямые ссылки ton://, всё идет через TonConnect
-  const checkTonConnectStatus = () => {
-    // Просто вызываем обновление статуса
-    refetch();
-  };
   
   // Ручное обновление статуса
   const handleCheckStatus = () => {

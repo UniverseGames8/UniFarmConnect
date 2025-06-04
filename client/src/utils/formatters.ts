@@ -218,3 +218,7 @@ export function getTransactionIcon(type: string): string {
   
   return iconMap[type] || '💰';
 }
+
+export const formatNumberWithPrecision = (value: number, precision: number): string => {
+  return value.toFixed(precision);
+};

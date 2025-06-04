@@ -515,7 +515,7 @@ const UniFarmingCard: React.FC<UniFarmingCardProps> = ({ userData }) => {
       }
 
       // Проверка активности фарминга
-      if (!isActive) {
+      if (!farmingInfo.isActive) {
         console.log('Показываем информацию для неактивного фарминга');
         try {
           setError('Активируйте фарминг, чтобы начать получать доход автоматически');

@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { BOOST_PACKAGES } from '@/lib/constants';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { correctApiRequest } from '@/lib/correctApiRequest';
 import { formatAmount, safeFormatAmount, getOptimalDecimals } from '@/utils/formatters';
+import { BOOST_PACKAGES } from '@/lib/constants';
+
+// Базовый интерфейс для API-ответа
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
 
 // Интерфейс для фарминг-депозита
 interface FarmingDeposit {
@@ -15,7 +21,7 @@ interface FarmingDeposit {
   uniYield: string;
   tonYield: string;
   bonus: string;
-  amount?: string; // Сумма депозита/транзакции
+  amount?: string;
   daysLeft: number;
 }
 
@@ -28,12 +34,6 @@ interface FarmingHistory {
   currency: string;
   boost_package_id?: number;
   isNew?: boolean;
-}
-
-// Интерфейс для API-ответа
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
 }
 
 // Интерфейс для TON Boost
@@ -74,21 +74,23 @@ interface FarmingHistoryProps {
 
 // Основной компонент истории фарминга
 const FarmingHistory: React.FC<FarmingHistoryProps> = ({ userId }) => {
-  const [activeTab, setActiveTab] = useState('ton');  // Меняем начальную вкладку на 'ton' вместо 'uni'
-  const [farmingHistory, setFarmingHistory] = useState<FarmingHistory[]>([]);
-  const [deposits, setDeposits] = useState<FarmingDeposit[]>([]);
+  const [activeTab, setActiveTab] = useState('ton');
   const [opacity, setOpacity] = useState(0);
   const [translateY, setTranslateY] = useState(20);
-  const [isLoading, setIsLoading] = useState(true);
   
   // Убеждаемся, что userId определен
-  const validUserId = userId || 1; // Используем 1 как фолбэк значение, если userId не передан
+  const validUserId = userId || 1;
   
-  // Запрос на получение транзакций с усиленной обработкой ошибок
-  const { data: transactionsResponse, refetch: refetchTransactions } = useQuery({
+  // Запрос на получение транзакций
+  const { data: transactionsResponse } = useQuery({
     queryKey: ['/api/v2/transactions', { user_id: validUserId }],
     queryFn: async () => {
+      if (!validUserId) {
+        return { success: true, data: { transactions: [] } };
+      }
+      
       try {
+        const result = await correctApiRequest<any>(`/api/v2/transactions?user_id=${validUserId}`, 'GET');
         // Проверка наличия userId перед запросом
         if (!validUserId) {
           console.warn("[WARNING] FarmingHistory - Попытка получить транзакции без userId");

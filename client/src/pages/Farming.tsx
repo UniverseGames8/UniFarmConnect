@@ -2,7 +2,6 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UniFarmingCardWithErrorBoundary from '../components/farming/UniFarmingCardWithErrorBoundary';
 import BoostPackagesCardWithErrorBoundary from '../components/farming/BoostPackagesCardWithErrorBoundary';
-import TonBoostPackagesCardWithErrorBoundary from '../components/ton-boost/TonBoostPackagesCardWithErrorBoundary';
 import TonFarmingStatusCardWithErrorBoundary from '../components/ton-boost/TonFarmingStatusCardWithErrorBoundary';
 import ActiveTonBoostsCardWithErrorBoundary from '../components/ton-boost/ActiveTonBoostsCardWithErrorBoundary';
 // ЭТАП 2: Импорт хука для управления кнопками фарминга
@@ -10,21 +9,10 @@ import { useTelegramButtons } from '../hooks/useTelegramButtons';
 
 const Farming: React.FC = () => {
   // ЭТАП 2: Инициализация кнопок фарминга с обработчиками
-  const { showStartFarmingButton, showCollectButton, hideButton } = useTelegramButtons();
+  const { hideButton } = useTelegramButtons();
   
   // Статические данные для демонстрации в Replit (без API запросов)
   const userData = null;
-
-  // ЭТАП 2: Обработчики для действий фарминга
-  const handleStartFarming = () => {
-    console.log('[FARMING PAGE] 🌱 Начало фарминга');
-    // Здесь будет интеграция с API фарминга
-  };
-
-  const handleHarvestFarming = () => {
-    console.log('[FARMING PAGE] 🌾 Сбор урожая');
-    // Здесь будет интеграция с API сбора урожая
-  };
 
   // УБРАНА КНОПКА ФАРМИНГА - больше не показываем никаких кнопок внизу
   React.useEffect(() => {

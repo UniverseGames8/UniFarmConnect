@@ -4,7 +4,6 @@ import ReferralLevelsTable from '@/components/friends/ReferralLevelsTable';
 import { useQuery } from '@tanstack/react-query';
 import userService from '@/services/userService';
 import type { User } from '@/services/userService';
-import { queryClient } from '@/lib/queryClient';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { correctApiRequest } from '@/lib/correctApiRequest';
 
@@ -13,9 +12,6 @@ import { correctApiRequest } from '@/lib/correctApiRequest';
  * Показывает реферальную ссылку и таблицу с уровнями партнерской программы
  */
 const Friends: React.FC = () => {
-  // Состояние для отслеживания видимости элементов
-  const [isLoaded, setIsLoaded] = useState(true);
-  
   // Получаем информацию о пользователе с принудительным обновлением
   const { data: userData, isLoading, isError, refetch } = useQuery<User>({
     queryKey: ['/api/v2/users/profile'], 
@@ -93,54 +89,8 @@ const Friends: React.FC = () => {
     }
   }, [userData, isLoading, refetch]);
   
-  // Функция для принудительного обновления данных с улучшенной обработкой ошибок
-  const forceDataRefresh = async () => {
-    try {
-      // Принудительно запрашиваем свежие данные
-      const updatedUser = await userService.getCurrentUser(true);
-      
-      // Обновляем UI через событие
-      window.dispatchEvent(new CustomEvent('user:updated', { detail: updatedUser }));
-      
-      // Затем обновляем React Query кэш
-      try {
-        await refetch();
-      } catch (refetchError) {
-        console.error('Ошибка при обновлении данных через refetch:', refetchError);
-        // Продолжаем выполнение, даже если refetch не удался
-      }
-      
-      // Если кода все равно нет - пробуем генерировать
-      if (updatedUser && !updatedUser.ref_code) {
-        try {
-          await userService.generateRefCode();
-          try {
-            await refetch();
-          } catch (refetchError) {
-            console.error('Ошибка при обновлении данных после генерации кода:', refetchError);
-          }
-        } catch (genError) {
-          console.error('Не удалось сгенерировать реферальный код:', genError);
-          // Тихая обработка ошибки для пользователя
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка при обновлении данных пользователя:', error);
-      // Тихая обработка ошибки для пользователя, но логирование для отладки
-    }
-  };
-  
-  // Добавляем состояние для прямого доступа к ссылке
-  const [directLinkData, setDirectLinkData] = useState({
-    isLoading: false,
-    refCode: '',
-    error: ''
-  });
-
   // Функция для прямого получения реферального кода с улучшенной обработкой ошибок
   const fetchDirectRefCode = async () => {
-    setDirectLinkData({ isLoading: true, refCode: '', error: '' });
-    
     try {
       // Получаем guest_id пользователя с защитой от ошибок
       let guestId;
@@ -148,21 +98,11 @@ const Friends: React.FC = () => {
         guestId = localStorage.getItem('unifarm_guest_id');
       } catch (storageError) {
         console.error('Ошибка при доступе к localStorage:', storageError);
-        setDirectLinkData({ 
-          isLoading: false, 
-          refCode: '', 
-          error: 'Не удалось получить данные из локального хранилища' 
-        });
         return;
       }
       
       if (!guestId) {
         console.warn('guest_id отсутствует в localStorage');
-        setDirectLinkData({ 
-          isLoading: false, 
-          refCode: '', 
-          error: 'Не удалось получить идентификатор гостя' 
-        });
         return;
       }
       
@@ -173,20 +113,19 @@ const Friends: React.FC = () => {
         data = await correctApiRequest(`/api/users/guest/${guestId}`, 'GET');
       } catch (apiError: any) {
         console.error('Ошибка при запросе данных пользователя:', apiError);
-        setDirectLinkData({ 
-          isLoading: false, 
-          refCode: '', 
-          error: apiError.message || 'Не удалось подключиться к серверу' 
-        });
         return;
       }
       
       if (data.success && data.data && data.data.ref_code) {
-        setDirectLinkData({ 
-          isLoading: false, 
-          refCode: data.data.ref_code, 
-          error: '' 
-        });
+        // Если есть ref_code, обновляем данные
+        try {
+          refetch()
+            .catch(refetchError => {
+              console.error('Ошибка при обновлении данных через refetch:', refetchError);
+            });
+        } catch (refetchError) {
+          console.error('Необработанная ошибка при вызове refetch:', refetchError);
+        }
       } else if (data.success && data.data && !data.data.ref_code) {
         // Если нет ref_code, пробуем генерировать с использованием correctApiRequest
         try {
@@ -196,42 +135,30 @@ const Friends: React.FC = () => {
           });
           
           if (genData.success && genData.data && genData.data.ref_code) {
-            setDirectLinkData({ 
-              isLoading: false, 
-              refCode: genData.data.ref_code, 
-              error: '' 
-            });
+            // Если код успешно сгенерирован, обновляем данные
+            try {
+              refetch()
+                .catch(refetchError => {
+                  console.error('Ошибка при обновлении данных после генерации кода:', refetchError);
+                });
+            } catch (refetchError) {
+              console.error('Необработанная ошибка при вызове refetch:', refetchError);
+            }
           } else {
             console.warn('Неуспешный ответ при генерации кода:', genData);
-            setDirectLinkData({ 
-              isLoading: false, 
-              refCode: '', 
-              error: genData.message || 'Не удалось сгенерировать реферальный код' 
-            });
+            return;
           }
         } catch (genError) {
           console.error('Ошибка при генерации реферального кода:', genError);
-          setDirectLinkData({ 
-            isLoading: false, 
-            refCode: '', 
-            error: 'Ошибка при генерации реферального кода' 
-          });
+          return;
         }
       } else {
         console.warn('Неуспешный ответ при получении пользователя:', data);
-        setDirectLinkData({ 
-          isLoading: false, 
-          refCode: '', 
-          error: data.message || 'Не удалось получить данные пользователя' 
-        });
+        return;
       }
     } catch (error) {
       console.error('Необработанная ошибка в fetchDirectRefCode:', error);
-      setDirectLinkData({ 
-        isLoading: false, 
-        refCode: '', 
-        error: (error as Error).message || 'Произошла ошибка при запросе данных' 
-      });
+      return;
     }
   };
   
@@ -244,9 +171,6 @@ const Friends: React.FC = () => {
       // Тихая обработка ошибки для пользователя, продолжаем выполнение
     }
   }, []);
-  
-  // Безопасное приведение типов
-  const safeUser = userData as User | undefined;
 
   return (
     <div className="w-full">

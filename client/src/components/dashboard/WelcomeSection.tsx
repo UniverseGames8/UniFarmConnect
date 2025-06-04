@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTonConnectUI } from '@tonconnect/ui-react';
-import { getTelegramUserDisplayName, isTelegramWebApp } from '@/services/telegramService';
+import { getTelegramUserDisplayName } from '@/services/telegramService';
 import { 
   isWalletConnected, 
   getWalletAddress
@@ -9,8 +9,6 @@ import { useQuery } from '@tanstack/react-query';
 
 const WelcomeSection: React.FC = () => {
   const [userName, setUserName] = useState<string>('Пользователь');
-  const [walletConnected, setWalletConnected] = useState<boolean>(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [tonConnectUI] = useTonConnectUI();
   
   // Запрос данных о пользователе через API
@@ -30,23 +28,32 @@ const WelcomeSection: React.FC = () => {
   // Обновляем состояние кошелька при изменении tonConnectUI
   useEffect(() => {
     if (tonConnectUI) {
-      setWalletConnected(isWalletConnected(tonConnectUI));
-      setWalletAddress(getWalletAddress(tonConnectUI));
-      
       // Создаем обработчик событий изменения кошелька
       const handleWalletUpdate = () => {
-        setWalletConnected(isWalletConnected(tonConnectUI));
-        setWalletAddress(getWalletAddress(tonConnectUI));
+        // Обновляем состояние только если компонент все еще смонтирован
+        if (tonConnectUI) {
+          const isConnected = isWalletConnected(tonConnectUI);
+          const address = getWalletAddress(tonConnectUI);
+          
+          // Обновляем DOM напрямую для оптимизации производительности
+          const walletStatus = document.getElementById('wallet-status');
+          const walletAddress = document.getElementById('wallet-address');
+          
+          if (walletStatus) {
+            walletStatus.style.display = isConnected ? 'flex' : 'none';
+          }
+          
+          if (walletAddress) {
+            walletAddress.textContent = address || '';
+          }
+        }
       };
       
       // Подписываемся на события изменения состояния кошелька
       tonConnectUI.onStatusChange(handleWalletUpdate);
       
-      return () => {
-        // Отписываемся при размонтировании
-        // Обратите внимание, что для TonConnectUI нет метода off
-        // поэтому здесь не нужен явный cleanup
-      };
+      // Вызываем обработчик сразу для установки начального состояния
+      handleWalletUpdate();
     }
   }, [tonConnectUI]);
   
@@ -156,14 +163,12 @@ const WelcomeSection: React.FC = () => {
         </div>
         
         {/* Индикатор подключенного кошелька */}
-        {walletConnected && walletAddress && (
-          <div className="mt-2 inline-flex items-center greeting-text" style={{ animationDelay: '0.3s' }}>
-            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-            <span className="text-xs text-white/70">
-              Кошелек подключен
-            </span>
-          </div>
-        )}
+        <div id="wallet-status" className="mt-2 inline-flex items-center greeting-text" style={{ animationDelay: '0.3s', display: 'none' }}>
+          <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+          <span className="text-xs text-white/70">
+            Кошелек подключен
+          </span>
+        </div>
       </div>
     </div>
   );

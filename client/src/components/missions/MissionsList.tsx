@@ -8,7 +8,6 @@ import {
   Clock, 
   AlertCircle, 
   MessageCircle, 
-  Users, 
   Calendar, 
   Coins, 
   Tv,
@@ -428,19 +427,6 @@ export const MissionsList: React.FC = () => {
           icon: null 
         };
     }
-  };
-  
-  // Функция для получения URL из описания миссии
-  const extractUrlFromDescription = (description: string): string | null => {
-    // Регулярное выражение для поиска URL в тексте
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const matches = description.match(urlRegex);
-    
-    if (matches && matches.length > 0) {
-      return matches[0];
-    }
-    
-    return null;
   };
   
   // Обработчик начала выполнения социальной миссии

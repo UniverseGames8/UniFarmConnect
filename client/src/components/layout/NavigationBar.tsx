@@ -8,8 +8,7 @@ interface NavigationBarProps {
 }
 
 const NavigationBar: React.FC<NavigationBarProps> = ({ activeTab, setActiveTab }) => {
-  // Используем wouter для программной навигации
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   
   // Обработчик клика по иконке навигации
   const handleNavClick = (itemId: string) => {

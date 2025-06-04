@@ -8,20 +8,30 @@ import ExternalPaymentStatus from '../ton-boost/ExternalPaymentStatus';
 import { useUser } from '@/contexts/userContext';
 import { BadgeCheck, Rocket, Sparkles, TrendingUp, Zap } from 'lucide-react';
 
-// Определяем структуру буст-пакета
+// Types
 interface BoostPackage {
   id: number;
   name: string;
   price: string;
   tonDailyYield: string;
   uniBonus: string;
-  color?: string;
-  icon?: JSX.Element;
+  color: string;
+  icon: JSX.Element;
   popular?: boolean;
 }
 
-// Создаем массив с буст-пакетами и их ценой в UNI
-const boostPackages: BoostPackage[] = [
+interface PaymentTransaction {
+  transactionId: number;
+  paymentLink: string;
+  paymentMethod: 'internal_balance' | 'external_wallet';
+}
+
+interface BoostPackagesCardProps {
+  userData?: any;
+}
+
+// Constants
+const BOOST_PACKAGES: BoostPackage[] = [
   {
     id: 1,
     name: 'Starter Boost',
@@ -61,449 +71,135 @@ const boostPackages: BoostPackage[] = [
   }
 ];
 
-// Соответствие между ID буста и ценой в UNI
-const boostPricesUni: Record<number, string> = {
-  1: '100000',  // 100,000 UNI за Boost 1
-  2: '500000',  // 500,000 UNI за Boost 5
-  3: '1500000', // 1,500,000 UNI за Boost 15
-  4: '2500000'  // 2,500,000 UNI за Boost 25
+const BOOST_PRICES_UNI: Record<number, string> = {
+  1: '100000',
+  2: '500000',
+  3: '1500000',
+  4: '2500000'
 };
 
-// Безопасная функция для получения цены буста по ID с защитой от ошибок
-const getSafeBoostUniPrice = (boostId: number | null): string => {
-  try {
-    if (boostId === null || boostId === undefined) {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostUniPrice: boostId is null or undefined');
-      return '0';
-    }
-    
-    if (typeof boostId !== 'number') {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostUniPrice: boostId is not a number:', boostId);
-      return '0';
-    }
-    
-    const price = boostPricesUni[boostId];
-    if (price === undefined) {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostUniPrice: No price found for boostId:', boostId);
-      return '0';
-    }
-    
-    return price;
-  } catch (error) {
-    console.error('[ERROR] BoostPackagesCard - Error in getSafeBoostUniPrice:', error);
-    return '0';
-  }
+// Helper functions
+const getBoostUniPrice = (boostId: number): string => {
+  return BOOST_PRICES_UNI[boostId] || '0';
 };
 
-// Безопасная функция для получения информации о буст-пакете по ID с защитой от ошибок
-const getSafeBoostPackage = (boostId: number | null): BoostPackage | null => {
-  try {
-    if (boostId === null || boostId === undefined) {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostPackage: boostId is null or undefined');
-      return null;
-    }
-    
-    if (typeof boostId !== 'number') {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostPackage: boostId is not a number:', boostId);
-      return null;
-    }
-    
-    const boostPackage = boostPackages.find(bp => bp.id === boostId);
-    if (!boostPackage) {
-      console.warn('[WARNING] BoostPackagesCard - getSafeBoostPackage: No boost package found for boostId:', boostId);
-      return null;
-    }
-    
-    return boostPackage;
-  } catch (error) {
-    console.error('[ERROR] BoostPackagesCard - Error in getSafeBoostPackage:', error);
-    return null;
-  }
+const getBoostPackage = (boostId: number): BoostPackage | undefined => {
+  return BOOST_PACKAGES.find(bp => bp.id === boostId);
 };
-
-// Примечание: Интерфейс PaymentTransaction заменен на inline тип выше
-
-// Интерфейс свойств компонента
-interface BoostPackagesCardProps {
-  userData?: any;
-}
 
 const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
-  // Состояния
+  // State
   const [purchasingBoostId, setPurchasingBoostId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  
-  // Состояния для диалогов
   const [paymentDialogOpen, setPaymentDialogOpen] = useState<boolean>(false);
   const [paymentStatusDialogOpen, setPaymentStatusDialogOpen] = useState<boolean>(false);
-  
-  // Состояния для выбранного буста
   const [selectedBoostId, setSelectedBoostId] = useState<number | null>(null);
   const [selectedBoostName, setSelectedBoostName] = useState<string>('');
-  
-  // Состояние для данных о транзакции - обновленная версия с корректными типами для LSP
-  const [paymentTransaction, setPaymentTransaction] = useState<{
-    transactionId: number;
-    paymentLink: string;
-    paymentMethod: 'internal_balance' | 'external_wallet';
-  }>({
+  const [paymentTransaction, setPaymentTransaction] = useState<PaymentTransaction>({
     transactionId: 0,
     paymentLink: '',
     paymentMethod: 'internal_balance'
   });
   
   const queryClient = useQueryClient();
-  
-  // Получаем ID пользователя из контекста
   const { userId } = useUser();
 
-  // Функция для обработки сообщений об ошибках
+  // Error handling
   const handleErrorMessage = (message?: string) => {
-    try {
-      // Проверяем наличие ключевых слов, чтобы определить тип ошибки
-      if (!message) {
-        setErrorMessage('Произошла ошибка при покупке буста');
-        return;
-      }
-      
-      // Если сообщение содержит информацию о недостаточном балансе
-      if (message.toLowerCase().includes('недостаточно') ||
-          message.toLowerCase().includes('баланс') ||
-          message.toLowerCase().includes('balance') ||
-          message.toLowerCase().includes('insufficient')) {
-        setErrorMessage('Недостаточно средств на балансе для покупки буста');
-        return;
-      }
-      
-      // Если это другая ошибка, показываем упрощенное сообщение
-      setErrorMessage(message);
-    } catch (error: any) {
-      console.error('[ERROR] BoostPackagesCard - Ошибка при обработке сообщения об ошибке:', error);
-      // В крайнем случае показываем стандартное сообщение
-      try {
-        setErrorMessage('Произошла ошибка. Пожалуйста, попробуйте позже.');
-      } catch (err) {
-        console.error('[ERROR] BoostPackagesCard - Критическая ошибка при попытке показать сообщение:', err);
-      }
+    if (!message) {
+      setErrorMessage('Произошла ошибка при покупке буста');
+      return;
     }
+    
+    const lowerMessage = message.toLowerCase();
+    if (lowerMessage.includes('недостаточно') || 
+        lowerMessage.includes('баланс') || 
+        lowerMessage.includes('balance') || 
+        lowerMessage.includes('insufficient')) {
+      setErrorMessage('Недостаточно средств на балансе для покупки буста');
+      return;
+    }
+    
+    setErrorMessage(message);
   };
-  
-  // Мутация для покупки TON буста
+
+  // Mutations
   const buyTonBoostMutation = useMutation({
     mutationFn: async ({ boostId, paymentMethod }: { boostId: number, paymentMethod: 'internal_balance' | 'external_wallet' }) => {
-      try {
-        // Используем correctApiRequest вместо apiRequest для корректной обработки заголовков
-        return await correctApiRequest('/api/v2/ton-farming/purchase', 'POST', {
-          user_id: userId,
-          boost_id: boostId,
-          payment_method: paymentMethod
-        });
-      } catch (error: any) {
-        console.error("[ERROR] BoostPackagesCard - Ошибка при покупке TON буста:", error);
-        throw error;
-      }
+      return await correctApiRequest('/api/v2/ton-farming/purchase', 'POST', {
+        user_id: userId,
+        boost_id: boostId,
+        payment_method: paymentMethod
+      });
     },
     onMutate: ({ boostId }) => {
-      try {
-        // Сохраняем ID буста, который покупается
-        setPurchasingBoostId(boostId);
-        // Сбрасываем сообщения
-        setErrorMessage(null);
-        setSuccessMessage(null);
-      } catch (error: any) {
-        console.error('[ERROR] BoostPackagesCard - Ошибка в onMutate:', error);
-        // Не выбрасываем ошибку, чтобы не прерывать процесс
-      }
+      setPurchasingBoostId(boostId);
+      setErrorMessage(null);
+      setSuccessMessage(null);
     },
     onSuccess: (data) => {
-      try {
-        if (data.success) {
-          // Если оплата через внутренний баланс - показываем сообщение об успехе
-          if (data.data.paymentMethod === 'internal_balance') {
-            setSuccessMessage(data.message || 'Буст успешно приобретен!');
-            
-            // Инвалидируем кэш для обновления баланса и транзакций
-            invalidateQueryWithUserId(`/api/v2/users`);
-            invalidateQueryWithUserId('/api/v2/wallet/balance');
-            invalidateQueryWithUserId('/api/v2/transactions');
-            invalidateQueryWithUserId('/api/v2/ton-farming/active');
-          }
-          // Если оплата через внешний кошелек - показываем диалог статуса платежа
-          else if (data.data.paymentMethod === 'external_wallet') {
-            // Сохраняем данные о транзакции
-            setPaymentTransaction({
-              transactionId: data.data.transactionId,
-              paymentLink: data.data.paymentLink,
-              paymentMethod: 'external_wallet'
-            });
-            
-            // Открываем диалог статуса платежа
-            setPaymentStatusDialogOpen(true);
-            
-            // Закрываем диалог выбора способа оплаты
-            setPaymentDialogOpen(false);
-          }
-        } else {
-          // Показываем пользовательское сообщение об ошибке
-          handleErrorMessage(data.message);
-        }
-      } catch (error: any) {
-        console.error('[ERROR] BoostPackagesCard - Ошибка в onSuccess:', error);
-        
-        // Пытаемся восстановиться
-        try {
-          // Показываем общее сообщение об успехе (предполагаем, что покупка всё же прошла)
-          setSuccessMessage('Операция выполнена. Обновите страницу для проверки статуса.');
-          
-          // Пытаемся обновить кэш
+      if (data.success) {
+        if (data.data.paymentMethod === 'internal_balance') {
+          setSuccessMessage(data.message || 'Буст успешно приобретен!');
+          invalidateQueryWithUserId(`/api/v2/users`);
           invalidateQueryWithUserId('/api/v2/wallet/balance');
+          invalidateQueryWithUserId('/api/v2/transactions');
           invalidateQueryWithUserId('/api/v2/ton-farming/active');
-        } catch (err) {
-          console.error('[ERROR] BoostPackagesCard - Критическая ошибка при восстановлении:', err);
+        } else if (data.data.paymentMethod === 'external_wallet') {
+          setPaymentTransaction({
+            transactionId: data.data.transactionId,
+            paymentLink: data.data.paymentLink,
+            paymentMethod: 'external_wallet'
+          });
+          setPaymentStatusDialogOpen(true);
+          setPaymentDialogOpen(false);
         }
+      } else {
+        handleErrorMessage(data.message);
       }
     },
     onError: (error: any) => {
-      try {
-        console.error('[ERROR] BoostPackagesCard - Ошибка в buyTonBoostMutation:', error);
-        
-        // Пробуем распарсить JSON из ошибки, если он там есть
-        if (error.message && error.message.includes('{')) {
-          try {
-            const errorJson = error.message.substring(error.message.indexOf('{'));
-            const parsedError = JSON.parse(errorJson);
-            if (parsedError && parsedError.message) {
-              handleErrorMessage(parsedError.message);
-              return;
-            }
-          } catch (parseError) {
-            console.error('[ERROR] BoostPackagesCard - Ошибка при парсинге JSON из сообщения об ошибке:', parseError);
-            // Продолжаем обработку
-          }
-        }
-
-        // Показываем общее сообщение об ошибке
-        handleErrorMessage(error.message);
-      } catch (err: any) {
-        console.error('[ERROR] BoostPackagesCard - Критическая ошибка в onError:', err);
-        // Последняя попытка показать хоть какое-то сообщение
-        try {
-          setErrorMessage('Не удалось выполнить операцию. Пожалуйста, попробуйте позже.');
-        } catch {}
-      }
+      handleErrorMessage(error.message);
     },
     onSettled: () => {
-      try {
-        // Сбрасываем ID буста после завершения операции
-        setPurchasingBoostId(null);
-        
-        // Закрываем модальное окно выбора способа оплаты, если оно открыто
-        // Но не закрываем диалог статуса платежа
-        if (!paymentStatusDialogOpen) {
-          setPaymentDialogOpen(false);
-        }
-      } catch (error: any) {
-        console.error('[ERROR] BoostPackagesCard - Ошибка в onSettled:', error);
-        // В крайнем случае сбрасываем флаг (попытка)
-        try {
-          setPurchasingBoostId(null);
-        } catch {}
-      }
+      setPurchasingBoostId(null);
     }
   });
-  
-  // Проверяем, может ли пользователь купить буст с улучшенной обработкой ошибок
+
+  // Handlers
   const canBuyBoost = (boostId: number): boolean => {
-    try {
-      // Проверка валидности ID буста
-      if (boostId === undefined || boostId === null || isNaN(boostId)) {
-        console.warn('[WARNING] BoostPackagesCard - canBuyBoost: boostId недействителен:', boostId);
-        return false;
-      }
-      
-      // Если данные пользователя отсутствуют, все равно разрешаем покупку
-      // так как может быть внешняя оплата
-      if (!userData) {
-        console.log('[INFO] BoostPackagesCard - canBuyBoost: userData отсутствует, но разрешаем покупку');
-        return true;
-      }
-      
-      // Проверка, что userData является объектом
-      if (typeof userData !== 'object') {
-        console.warn('[WARNING] BoostPackagesCard - canBuyBoost: userData не является объектом:', typeof userData);
-        return true; // Все равно разрешаем
-      }
-      
-      // Всегда разрешаем покупку, так как есть возможность внешней оплаты
-      return true;
-    } catch (error: any) {
-      console.error('[ERROR] BoostPackagesCard - Ошибка при проверке возможности покупки буста:', error);
-      // В случае ошибки разрешаем покупку
-      return true;
-    }
+    if (!userData?.balance) return false;
+    const boostPackage = getBoostPackage(boostId);
+    if (!boostPackage) return false;
+    
+    const price = parseFloat(boostPackage.price);
+    const balance = parseFloat(userData.balance);
+    return balance >= price;
   };
-  
-  // Обработчик нажатия на кнопку "Buy Boost" с улучшенной обработкой ошибок
+
   const handleBuyBoost = (boostId: number) => {
-    try {
-      // Проверка валидности ID буста
-      if (boostId === undefined || boostId === null || isNaN(boostId)) {
-        console.warn('[WARNING] BoostPackagesCard - handleBuyBoost: boostId недействителен:', boostId);
-        setErrorMessage('Недействительный ID буста. Пожалуйста, обновите страницу и попробуйте снова.');
-        return;
-      }
-      
-      // Используем безопасную функцию для получения информации о бусте
-      const selectedBoost = getSafeBoostPackage(boostId);
-      
-      // Если буст не найден
-      if (!selectedBoost) {
-        console.warn('[WARNING] BoostPackagesCard - handleBuyBoost: Буст не найден для ID:', boostId);
-        setErrorMessage('Выбранный буст недоступен. Пожалуйста, выберите другой.');
-        return;
-      }
-      
-      try {
-        // Устанавливаем ID выбранного буста
-        setSelectedBoostId(boostId);
-        
-        // Устанавливаем имя выбранного буста с проверкой на undefined
-        setSelectedBoostName(selectedBoost.name || `Boost ${boostId}`);
-        
-        // Открываем диалог выбора способа оплаты
-        setPaymentDialogOpen(true);
-      } catch (stateError) {
-        console.error('[ERROR] BoostPackagesCard - handleBuyBoost: Ошибка при установке состояния:', stateError);
-        setErrorMessage('Произошла ошибка. Пожалуйста, попробуйте еще раз.');
-      }
-    } catch (error: any) {
-      console.error('[ERROR] BoostPackagesCard - Ошибка при выборе буста:', error);
-      
-      // Безопасно показываем сообщение об ошибке
-      try {
-        setErrorMessage('Не удалось открыть окно покупки. Пожалуйста, попробуйте еще раз.');
-      } catch (messageError) {
-        console.error('[ERROR] BoostPackagesCard - Критическая ошибка при установке сообщения:', messageError);
-      }
-    }
+    const boostPackage = getBoostPackage(boostId);
+    if (!boostPackage) return;
+
+    setSelectedBoostId(boostId);
+    setSelectedBoostName(boostPackage.name);
+    setPaymentDialogOpen(true);
   };
-  
-  // Обработчик выбора способа оплаты с усиленной обработкой ошибок
+
   const handleSelectPaymentMethod = (boostId: number, paymentMethod: 'internal_balance' | 'external_wallet') => {
-    try {
-      // Проверка валидности ID буста
-      if (boostId === undefined || boostId === null || isNaN(boostId)) {
-        console.warn('[WARNING] BoostPackagesCard - handleSelectPaymentMethod: boostId недействителен:', boostId);
-        setErrorMessage('Недействительный ID буста. Пожалуйста, попробуйте снова.');
-        setPaymentDialogOpen(false);
-        return;
-      }
-      
-      // Проверка валидности способа оплаты
-      if (!paymentMethod || (paymentMethod !== 'internal_balance' && paymentMethod !== 'external_wallet')) {
-        console.warn('[WARNING] BoostPackagesCard - handleSelectPaymentMethod: недействительный способ оплаты:', paymentMethod);
-        setErrorMessage('Выбран недействительный способ оплаты. Пожалуйста, попробуйте снова.');
-        setPaymentDialogOpen(false);
-        return;
-      }
-      
-      // Проверка ID пользователя
-      if (!userId) {
-        console.warn('[WARNING] BoostPackagesCard - handleSelectPaymentMethod: userId отсутствует');
-        setErrorMessage('Сессия пользователя не найдена. Пожалуйста, обновите страницу.');
-        setPaymentDialogOpen(false);
-        return;
-      }
-      
-      try {
-        // Запускаем мутацию покупки буста
-        buyTonBoostMutation.mutate({ boostId, paymentMethod });
-      } catch (mutationError) {
-        console.error('[ERROR] BoostPackagesCard - handleSelectPaymentMethod: Ошибка при выполнении мутации:', mutationError);
-        setErrorMessage('Не удалось выполнить платеж. Пожалуйста, попробуйте еще раз.');
-        setPaymentDialogOpen(false);
-      }
-    } catch (error: any) {
-      console.error('[ERROR] BoostPackagesCard - Ошибка при выборе способа оплаты:', error);
-      
-      // Безопасно показываем сообщение об ошибке и закрываем диалог
-      try {
-        setErrorMessage('Не удалось выполнить платеж. Пожалуйста, попробуйте еще раз.');
-        setPaymentDialogOpen(false);
-      } catch (stateError) {
-        console.error('[ERROR] BoostPackagesCard - Критическая ошибка при установке состояния:', stateError);
-      }
-    }
+    buyTonBoostMutation.mutate({ boostId, paymentMethod });
   };
-  
-  // Обработчик завершения внешнего платежа с защитой от ошибок
+
   const handlePaymentComplete = () => {
-    try {
-      // Проверка ID пользователя
-      if (!userId) {
-        console.warn('[WARNING] BoostPackagesCard - handlePaymentComplete: userId отсутствует');
-        // Даже если ID пользователя отсутствует, мы всё равно попытаемся обновить кэш
-      }
-      
-      // Обновляем данные последовательно с обработкой ошибок для каждого вызова
-      const invalidatePromises: Promise<void>[] = [];
-      
-      try {
-        invalidatePromises.push(invalidateQueryWithUserId('/api/v2/users'));
-      } catch (userError) {
-        console.error('[ERROR] BoostPackagesCard - handlePaymentComplete: Ошибка при инвалидации /api/v2/users:', userError);
-      }
-      
-      try {
-        invalidatePromises.push(invalidateQueryWithUserId('/api/v2/wallet/balance'));
-      } catch (balanceError) {
-        console.error('[ERROR] BoostPackagesCard - handlePaymentComplete: Ошибка при инвалидации /api/v2/wallet/balance:', balanceError);
-      }
-      
-      try {
-        invalidatePromises.push(invalidateQueryWithUserId('/api/v2/transactions'));
-      } catch (transactionsError) {
-        console.error('[ERROR] BoostPackagesCard - handlePaymentComplete: Ошибка при инвалидации /api/v2/transactions:', transactionsError);
-      }
-      
-      try {
-        invalidatePromises.push(invalidateQueryWithUserId('/api/v2/ton-farming/active'));
-      } catch (boostsError) {
-        console.error('[ERROR] BoostPackagesCard - handlePaymentComplete: Ошибка при инвалидации /api/v2/ton-farming/active:', boostsError);
-      }
-      
-      // Ждем завершения всех запросов (даже если некоторые из них завершатся с ошибкой)
-      Promise.allSettled(invalidatePromises).then(() => {
-        try {
-          // Закрываем диалог статуса платежа
-          setPaymentStatusDialogOpen(false);
-          
-          // Показываем сообщение об успехе
-          setSuccessMessage('TON Boost успешно активирован! Бонусные UNI зачислены на ваш баланс.');
-        } catch (stateError) {
-          console.error('[ERROR] BoostPackagesCard - handlePaymentComplete: Ошибка при обновлении состояния после инвалидации:', stateError);
-          
-          // Последняя попытка закрыть диалог
-          try {
-            setPaymentStatusDialogOpen(false);
-            setSuccessMessage('Платеж выполнен, обновите страницу для проверки результата.');
-          } catch {}
-        }
-      });
-    } catch (error: any) {
-      console.error('[ERROR] BoostPackagesCard - Ошибка при завершении платежа:', error);
-      
-      // Пытаемся всё же закрыть диалог и показать сообщение об успехе
-      try {
-        setPaymentStatusDialogOpen(false);
-        setSuccessMessage('Платеж выполнен, но возникла ошибка при обновлении данных. Пожалуйста, обновите страницу.');
-      } catch (err) {
-        console.error('[ERROR] BoostPackagesCard - Критическая ошибка при попытке восстановления:', err);
-      }
-    }
+    setPaymentStatusDialogOpen(false);
+    setPaymentTransaction({
+      transactionId: 0,
+      paymentLink: '',
+      paymentMethod: 'internal_balance'
+    });
   };
-  
+
   return (
     <div className="mt-8 px-2">
       <h2 className="text-xl font-semibold mb-6 text-center">
@@ -529,7 +225,7 @@ const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
           try {
             if (!selectedBoostId) return "1";
             
-            const selectedBoost = getSafeBoostPackage(selectedBoostId);
+            const selectedBoost = getBoostPackage(selectedBoostId);
             if (!selectedBoost || !selectedBoost.price) return "1";
             
             const priceParts = selectedBoost.price.split(' ');
@@ -612,11 +308,11 @@ const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
       )}
       
       <div className="grid grid-cols-1 gap-8 max-w-2xl mx-auto">
-        {boostPackages.map((boost) => {
+        {BOOST_PACKAGES.map((boost) => {
           // Защищенный доступ к цене в UNI с обработкой потенциальных ошибок
           let uniPriceDisplay = '0 UNI';
           try {
-            const boostUniPrice = getSafeBoostUniPrice(boost.id);
+            const boostUniPrice = getBoostUniPrice(boost.id);
             if (boostUniPrice && boostUniPrice !== '0') {
               try {
                 const priceValue = parseInt(boostUniPrice);

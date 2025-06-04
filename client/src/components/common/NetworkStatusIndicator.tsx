@@ -14,8 +14,8 @@ type AlertType = 'online' | 'offline' | 'wsConnected' | 'wsDisconnected' | 'hidd
  * Компонент для отображения статуса сетевого соединения и WebSocket
  * Показывает уведомление при потере соединения
  */
-const NetworkStatusIndicator: React.FC = () => {
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
+export const NetworkStatusIndicator: React.FC = () => {
+  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const [alertType, setAlertType] = useState<AlertType>('hidden');
   const [alertVisible, setAlertVisible] = useState<boolean>(false);
   const { connectionStatus } = useWebSocket();
@@ -23,7 +23,7 @@ const NetworkStatusIndicator: React.FC = () => {
   // Обновляем статус онлайн/оффлайн
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
+      setIsOffline(false);
       setAlertType('online');
       setAlertVisible(true);
       
@@ -34,7 +34,7 @@ const NetworkStatusIndicator: React.FC = () => {
     };
 
     const handleOffline = () => {
-      setIsOnline(false);
+      setIsOffline(true);
       setAlertType('offline');
       setAlertVisible(true);
     };

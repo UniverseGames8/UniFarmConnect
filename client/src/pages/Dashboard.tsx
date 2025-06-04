@@ -5,8 +5,8 @@ import { useUser } from '@/contexts/userContext';
 // Dashboard Components
 import WelcomeSection from '@/components/dashboard/WelcomeSection';
 import IncomeCardNew from '@/components/dashboard/IncomeCardNew';
-import ChartCard from '@/components/dashboard/ChartCard';
-import BoostStatusCard from '@/components/dashboard/BoostStatusCard';
+import { ChartCard } from '@/components/dashboard/ChartCard';
+import { BoostStatusCard } from '@/components/dashboard/BoostStatusCard';
 import DailyBonusCard from '@/components/dashboard/DailyBonusCard';
 import SystemStatusIndicator from '@/components/ui/SystemStatusIndicator';
 import UniFarmingCardWithErrorBoundary from '@/components/farming/UniFarmingCardWithErrorBoundary';

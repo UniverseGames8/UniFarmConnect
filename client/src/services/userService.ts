@@ -1,6 +1,3 @@
-import { apiRequest } from "@/lib/queryClient";
-import { getCachedTelegramUserId } from "@/services/telegramService";
-import apiConfig from "@/config/apiConfig";
 import { correctApiRequest } from "@/lib/correctApiRequest";
 
 /**

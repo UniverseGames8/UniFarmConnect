@@ -1,111 +1,48 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Notification, NotificationOptions } from '../../../types/notification';
+import React, { createContext, useContext, useState } from 'react';
+
+export interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+  description?: string;
+}
 
 interface NotificationContextType {
   notifications: Notification[];
-  addNotification: (options: NotificationOptions) => string;
+  showNotification: (notification: Omit<Notification, 'id'>) => void;
   removeNotification: (id: string) => void;
-  success: (message: string, options?: Partial<NotificationOptions>) => string;
-  error: (message: string, options?: Partial<NotificationOptions>) => string;
-  info: (message: string, options?: Partial<NotificationOptions>) => string;
-  loading: (message: string, options?: Partial<NotificationOptions>) => string;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-interface NotificationProviderProps {
-  children: React.ReactNode;
-}
-
-export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = useCallback((options: NotificationOptions): string => {
-    const id = Math.random().toString(36).substring(2);
-    const notification: Notification = {
-      id,
-      type: 'info',
-      duration: 5000,
-      autoDismiss: true,
-      ...options,
-    };
+  const showNotification = (notification: Omit<Notification, 'id'>) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setNotifications(prev => [...prev, { ...notification, id }]);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      removeNotification(id);
+    }, 5000);
+  };
 
-    setNotifications(prev => [...prev, notification]);
-
-    // Автоматическое удаление уведомления
-    if (notification.autoDismiss && notification.duration) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, notification.duration);
-    }
-
-    return id;
-  }, []);
-
-  const removeNotification = useCallback((id: string) => {
+  const removeNotification = (id: string) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
-  }, []);
-
-  const success = useCallback((message: string, options?: Partial<NotificationOptions>): string => {
-    return addNotification({
-      message,
-      type: 'success',
-      duration: 4000,
-      autoDismiss: true,
-      ...options,
-    });
-  }, [addNotification]);
-
-  const error = useCallback((message: string, options?: Partial<NotificationOptions>): string => {
-    return addNotification({
-      message,
-      type: 'error',
-      duration: 6000,
-      autoDismiss: true,
-      ...options,
-    });
-  }, [addNotification]);
-
-  const info = useCallback((message: string, options?: Partial<NotificationOptions>): string => {
-    return addNotification({
-      message,
-      type: 'info',
-      duration: 5000,
-      autoDismiss: true,
-      ...options,
-    });
-  }, [addNotification]);
-
-  const loading = useCallback((message: string, options?: Partial<NotificationOptions>): string => {
-    return addNotification({
-      message,
-      type: 'loading',
-      autoDismiss: false,
-      ...options,
-    });
-  }, [addNotification]);
-
-  const value = {
-    notifications,
-    addNotification,
-    removeNotification,
-    success,
-    error,
-    info,
-    loading,
   };
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={{ notifications, showNotification, removeNotification }}>
       {children}
     </NotificationContext.Provider>
   );
 };
 
-export const useNotification = (): NotificationContextType => {
+export const useNotification = () => {
   const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotification должен использоваться внутри NotificationProvider');
+  if (context === undefined) {
+    throw new Error('useNotification must be used within a NotificationProvider');
   }
   return context;
 };

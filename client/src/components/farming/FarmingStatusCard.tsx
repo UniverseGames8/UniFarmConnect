@@ -1,91 +1,67 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiGet } from '@/lib/apiService';
+
+interface FarmingStatus {
+  isActive: boolean;
+  uniDailyYield: number;
+  uniPerSecond: number;
+  tonDailyYield: number;
+  tonPerSecond: number;
+  progressToNextLevel: number;
+}
 
 const FarmingStatusCard: React.FC = () => {
-  // Анимация числовых значений
-  const [dailyYield, setDailyYield] = useState(0);
-  const [perSecond, setPerSecond] = useState(0);
-  const [tonDailyYield, setTonDailyYield] = useState(0);
-  const [tonPerSecond, setTonPerSecond] = useState(0);
-  
-  // Анимация пульсирующего эффекта с периодическим запуском
   const [isPulsing, setIsPulsing] = useState(false);
   const [isTonPulsing, setIsTonPulsing] = useState(false);
-  
-  // Индикатор активности фарминга
-  const [isActive, setIsActive] = useState(true);
   const [dotOpacity, setDotOpacity] = useState(0.5);
   
-  // Анимация значений при загрузке компонента
-  useEffect(() => {
-    // Анимируем нарастание значений
-    const animationDuration = 1800;
-    const startTime = Date.now();
-    const targetDaily = 0; // Целевое значение UNI в день
-    const targetPerSecond = 0; // Целевое значение UNI в секунду
-    const targetTonDaily = 0; // Целевое значение TON в день
-    const targetTonPerSecond = 0; // Целевое значение TON в секунду
-    
-    const animate = () => {
-      const currentTime = Date.now();
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / animationDuration, 1);
-      
-      // Эффект замедления в конце для плавного окончания анимации
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      
-      setDailyYield(targetDaily * easedProgress);
-      setPerSecond(targetPerSecond * easedProgress);
-      setTonDailyYield(targetTonDaily * easedProgress);
-      setTonPerSecond(targetTonPerSecond * easedProgress);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
+  // Получаем данные о статусе фарминга
+  const { data: farmingStatus } = useQuery<FarmingStatus>({
+    queryKey: ['farmingStatus'],
+    queryFn: async () => {
+      const response = await apiGet<{ success: boolean; data: FarmingStatus }>('/api/v2/farming/status');
+      if (!response.success) {
+        throw new Error('Failed to fetch farming status');
       }
-    };
-    
-    requestAnimationFrame(animate);
+      return response.data;
+    },
+    refetchInterval: 5000, // Обновляем каждые 5 секунд
+  });
+  
+  // Эффект пульсации для UNI
+  useEffect(() => {
+    if (document.visibilityState === 'visible') {
+      const intervalId = setInterval(() => {
+        setIsPulsing(true);
+        setTimeout(() => setIsPulsing(false), 800);
+      }, 5000);
+      
+      return () => clearInterval(intervalId);
+    }
   }, []);
   
-  // Эффект пульсации для UNI каждые несколько секунд
+  // Эффект пульсации для TON
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      setIsPulsing(true);
-      setTimeout(() => setIsPulsing(false), 800);
-    }, 5000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-  
-  // Эффект пульсации для TON с небольшой задержкой относительно UNI
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setIsTonPulsing(true);
-      setTimeout(() => setIsTonPulsing(false), 800);
-    }, 5000);
-    
-    // Запускаем с небольшой задержкой относительно UNI
-    const timeout = setTimeout(() => {
+    if (document.visibilityState === 'visible') {
       const intervalId = setInterval(() => {
         setIsTonPulsing(true);
         setTimeout(() => setIsTonPulsing(false), 800);
       }, 5000);
       
       return () => clearInterval(intervalId);
-    }, 2500);
-    
-    return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeout);
-    };
+    }
   }, []);
   
   // Анимация мигающего индикатора
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      setDotOpacity(prev => prev === 0.5 ? 1 : 0.5);
-    }, 1000);
-    
-    return () => clearInterval(intervalId);
+    if (document.visibilityState === 'visible') {
+      const intervalId = setInterval(() => {
+        setDotOpacity(prev => prev === 0.5 ? 1 : 0.5);
+      }, 1000);
+      
+      return () => clearInterval(intervalId);
+    }
   }, []);
   
   // Стиль для индикатора активности
@@ -93,7 +69,7 @@ const FarmingStatusCard: React.FC = () => {
     width: '10px',
     height: '10px',
     borderRadius: '50%',
-    backgroundColor: isActive ? '#00FF99' : '#A259FF',
+    backgroundColor: farmingStatus?.isActive ? '#00FF99' : '#A259FF',
     opacity: dotOpacity,
     transition: 'opacity 0.5s ease',
     marginRight: '8px'
@@ -104,7 +80,7 @@ const FarmingStatusCard: React.FC = () => {
       <div className="flex items-center mb-3">
         <div style={activeIndicatorStyle}></div>
         <p className="text-sm font-medium">
-          {isActive ? 'Фарминг активен' : 'Фарминг неактивен'}
+          {farmingStatus?.isActive ? 'Фарминг активен' : 'Фарминг неактивен'}
         </p>
       </div>
       
@@ -113,7 +89,7 @@ const FarmingStatusCard: React.FC = () => {
         <div className={`transition-all duration-300 ${isPulsing ? 'scale-105' : 'scale-100'}`}>
           <p className="text-sm text-foreground opacity-70">Текущий доход</p>
           <p className="text-lg font-semibold green-gradient-text relative">
-            {dailyYield.toFixed(0)} UNI / сутки
+            {farmingStatus?.uniDailyYield.toFixed(0) || 0} UNI / сутки
             {isPulsing && (
               <span className="absolute -right-4 top-0">
                 <svg className="w-4 h-4 text-accent animate-pulse-fade" 
@@ -127,7 +103,7 @@ const FarmingStatusCard: React.FC = () => {
           </p>
           {/* TON Daily Yield */}
           <p className="text-sm text-cyan-400 font-medium mt-1 relative">
-            {tonDailyYield.toFixed(4)} TON / сутки
+            {farmingStatus?.tonDailyYield.toFixed(4) || 0} TON / сутки
             {isTonPulsing && (
               <span className="absolute -right-4 top-0">
                 <svg className="w-3 h-3 text-cyan-400 animate-pulse-fade" 
@@ -145,7 +121,7 @@ const FarmingStatusCard: React.FC = () => {
         <div className={`transition-all duration-300 ${isPulsing ? 'scale-105' : 'scale-100'}`}>
           <p className="text-sm text-foreground opacity-70">Начисление</p>
           <p className="text-md green-gradient-text font-medium relative">
-            +{perSecond.toFixed(4)} UNI / сек
+            +{farmingStatus?.uniPerSecond.toFixed(4) || 0} UNI / сек
             <span className="absolute right-0 top-0 transform translate-x-full">
               {isPulsing && (
                 <i className="fas fa-arrow-up text-xs text-green-400 animate-bounce"></i>
@@ -154,7 +130,7 @@ const FarmingStatusCard: React.FC = () => {
           </p>
           {/* TON Per Second */}
           <p className="text-sm text-cyan-400 font-medium mt-1 relative">
-            +{tonPerSecond.toFixed(4)} TON / сек
+            +{farmingStatus?.tonPerSecond.toFixed(4) || 0} TON / сек
             <span className="absolute right-0 top-0 transform translate-x-full">
               {isTonPulsing && (
                 <i className="fas fa-arrow-up text-xs text-cyan-400 animate-bounce"></i>
@@ -164,16 +140,19 @@ const FarmingStatusCard: React.FC = () => {
         </div>
       </div>
       
-      {/* Прогресс-бар до следующего повышения (визуальный элемент) */}
+      {/* Прогресс-бар до следующего повышения */}
       <div className="mt-4">
         <div className="flex justify-between items-center text-xs mb-1">
           <p className="text-foreground opacity-70">Прогресс до +10% дохода</p>
-          <p className="text-foreground">12%</p>
+          <p className="text-foreground">{farmingStatus?.progressToNextLevel || 0}%</p>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-primary to-accent" 
-            style={{ width: '12%', transition: 'width 1s ease-in-out' }}
+            style={{ 
+              width: `${farmingStatus?.progressToNextLevel || 0}%`, 
+              transition: 'width 1s ease-in-out' 
+            }}
           ></div>
         </div>
       </div>
