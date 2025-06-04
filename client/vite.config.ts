@@ -9,7 +9,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, './src'),
       "@modules": path.resolve(__dirname, './src/modules'),
       "@core": path.resolve(__dirname, './src/core'),
-      "@shared": path.resolve(__dirname, './src/shared')
+      "@shared": path.resolve(__dirname, './src/shared'),
+      "@pages": path.resolve(__dirname, './src/pages')
     }
   },
   build: {

@@ -67,7 +67,7 @@ const BalanceCard: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
+  return (
       <div className="bg-white rounded-lg shadow-md p-4">
         <div className="flex justify-center items-center h-24">
           <span className="text-gray-500">Загрузка баланса...</span>
@@ -80,14 +80,14 @@ const BalanceCard: React.FC = () => {
     <div className="bg-white rounded-lg shadow-md p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Баланс TON</h2>
-        <button
+          <button 
           onClick={handleRefresh}
           disabled={isRefreshing}
           className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
         >
           {isRefreshing ? 'Обновление...' : 'Обновить'}
-        </button>
-      </div>
+          </button>
+        </div>
       
       <div className="space-y-2">
         <div className="flex justify-between">
@@ -100,11 +100,11 @@ const BalanceCard: React.FC = () => {
           <span className="font-medium">${getUsdValue(balance?.tonBalance || 0)}</span>
         </div>
       </div>
-
+      
       {refreshError && (
         <div className="mt-2 text-red-600 text-sm">
           {refreshError}
-        </div>
+          </div>
       )}
 
       {lastRefreshTime && (

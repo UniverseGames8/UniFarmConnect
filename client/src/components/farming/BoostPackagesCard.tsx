@@ -107,66 +107,66 @@ const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
 
   // Error handling
   const handleErrorMessage = (message?: string) => {
-    if (!message) {
-      setErrorMessage('Произошла ошибка при покупке буста');
-      return;
-    }
-    
+      if (!message) {
+        setErrorMessage('Произошла ошибка при покупке буста');
+        return;
+      }
+      
     const lowerMessage = message.toLowerCase();
     if (lowerMessage.includes('недостаточно') || 
         lowerMessage.includes('баланс') || 
         lowerMessage.includes('balance') || 
         lowerMessage.includes('insufficient')) {
-      setErrorMessage('Недостаточно средств на балансе для покупки буста');
-      return;
-    }
-    
-    setErrorMessage(message);
+        setErrorMessage('Недостаточно средств на балансе для покупки буста');
+        return;
+      }
+      
+      setErrorMessage(message);
   };
 
   // Mutations
   const buyTonBoostMutation = useMutation({
     mutationFn: async ({ boostId, paymentMethod }: { boostId: number, paymentMethod: 'internal_balance' | 'external_wallet' }) => {
-      return await correctApiRequest('/api/v2/ton-farming/purchase', 'POST', {
-        user_id: userId,
-        boost_id: boostId,
-        payment_method: paymentMethod
-      });
+        return await correctApiRequest('/api/v2/ton-farming/purchase', 'POST', {
+          user_id: userId,
+          boost_id: boostId,
+          payment_method: paymentMethod
+        });
     },
     onMutate: ({ boostId }) => {
-      setPurchasingBoostId(boostId);
-      setErrorMessage(null);
-      setSuccessMessage(null);
+        setPurchasingBoostId(boostId);
+        setErrorMessage(null);
+        setSuccessMessage(null);
     },
     onSuccess: (data) => {
-      if (data.success) {
-        if (data.data.paymentMethod === 'internal_balance') {
-          setSuccessMessage(data.message || 'Буст успешно приобретен!');
-          invalidateQueryWithUserId(`/api/v2/users`);
-          invalidateQueryWithUserId('/api/v2/wallet/balance');
-          invalidateQueryWithUserId('/api/v2/transactions');
-          invalidateQueryWithUserId('/api/v2/ton-farming/active');
+        if (data.success) {
+          if (data.data.paymentMethod === 'internal_balance') {
+            setSuccessMessage(data.message || 'Буст успешно приобретен!');
+            invalidateQueryWithUserId(`/api/v2/users`);
+            invalidateQueryWithUserId('/api/v2/wallet/balance');
+            invalidateQueryWithUserId('/api/v2/transactions');
+            invalidateQueryWithUserId('/api/v2/ton-farming/active');
         } else if (data.data.paymentMethod === 'external_wallet') {
-          setPaymentTransaction({
-            transactionId: data.data.transactionId,
-            paymentLink: data.data.paymentLink,
-            paymentMethod: 'external_wallet'
-          });
-          setPaymentStatusDialogOpen(true);
-          setPaymentDialogOpen(false);
-        }
-      } else {
-        handleErrorMessage(data.message);
+            setPaymentTransaction({
+              transactionId: data.data.transactionId,
+              paymentLink: data.data.paymentLink,
+              paymentMethod: 'external_wallet'
+            });
+            setPaymentStatusDialogOpen(true);
+            setPaymentDialogOpen(false);
+          }
+        } else {
+          handleErrorMessage(data.message);
       }
     },
     onError: (error: any) => {
-      handleErrorMessage(error.message);
+        handleErrorMessage(error.message);
     },
     onSettled: () => {
-      setPurchasingBoostId(null);
+          setPurchasingBoostId(null);
     }
   });
-
+  
   // Handlers
   const canBuyBoost = (boostId: number): boolean => {
     if (!userData?.balance) return false;
@@ -182,24 +182,24 @@ const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
     const boostPackage = getBoostPackage(boostId);
     if (!boostPackage) return;
 
-    setSelectedBoostId(boostId);
+        setSelectedBoostId(boostId);
     setSelectedBoostName(boostPackage.name);
-    setPaymentDialogOpen(true);
+        setPaymentDialogOpen(true);
   };
 
   const handleSelectPaymentMethod = (boostId: number, paymentMethod: 'internal_balance' | 'external_wallet') => {
-    buyTonBoostMutation.mutate({ boostId, paymentMethod });
+        buyTonBoostMutation.mutate({ boostId, paymentMethod });
   };
 
   const handlePaymentComplete = () => {
-    setPaymentStatusDialogOpen(false);
+          setPaymentStatusDialogOpen(false);
     setPaymentTransaction({
       transactionId: 0,
       paymentLink: '',
       paymentMethod: 'internal_balance'
     });
   };
-
+  
   return (
     <div className="mt-8 px-2">
       <h2 className="text-xl font-semibold mb-6 text-center">

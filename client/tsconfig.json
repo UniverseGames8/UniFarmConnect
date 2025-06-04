@@ -20,7 +20,8 @@
       "@/*": ["src/*"],
       "@modules/*": ["src/modules/*"],
       "@core/*": ["src/core/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@pages/*": ["src/pages/*"]
     }
   },
   "include": ["src"],
