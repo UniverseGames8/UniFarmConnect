@@ -70,7 +70,7 @@ export class TelegramService {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.telegram_id, parseInt(telegramId)))
+        .where(eq(users.telegram_id, telegramId))
         .limit(1);
 
       return user || null;
