@@ -8,13 +8,20 @@ declare global {
   }
 }
 
+const getTelegramWebApp = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    return window.Telegram.WebApp;
+  }
+  return null;
+};
+
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
+    const tg = getTelegramWebApp();
+    if (tg) {
       setWebApp(tg);
       tg.ready();
       setIsReady(true);
