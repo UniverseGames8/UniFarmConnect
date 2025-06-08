@@ -1,24 +1,14 @@
 [build]
 builder = "nixpacks"
-buildCommand = "echo 'No build command needed'"
-
-[deploy]
-startCommand = "echo 'No start command needed'"
-healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 3
-
-[deploy.services]
-frontend = { path = "client" }
-backend = { path = "server" }
 
 [deploy.services.frontend]
-startCommand = "npm run start"
+path = "client"
+startCommand = "npm run build && npm run preview"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 
 [deploy.services.backend]
-startCommand = "npm run start"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 100 
+path = "server"
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
