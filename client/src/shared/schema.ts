@@ -1,5 +1,4 @@
 import { pgTable, text, serial, integer, boolean, bigint, timestamp, numeric, json, jsonb, varchar, index } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Таблица с аутентификацией по имени пользователя и паролю (пароль не обязателен для Telegram)
@@ -62,39 +61,43 @@ export const farmingDeposits = pgTable("farming_deposits", {
 });
 
 // Схемы для аутентификации
-export const insertAuthUserSchema = createInsertSchema(authUsers).pick({
-  username: true,
-  password: true,
+export const insertAuthUserSchema = z.object({
+  username: z.string(), // text().notNull()
+  password: z.string().optional(), // text().default()
 });
 
 export type InsertAuthUser = z.infer<typeof insertAuthUserSchema>;
 export type AuthUser = typeof authUsers.$inferSelect;
 
 // Схемы для таблицы users
-export const insertUserSchema = createInsertSchema(users).pick({
-  telegram_id: true,
-  guest_id: true, // Добавляем guest_id в схему вставки
-  username: true,
-  wallet: true,
-  ton_wallet_address: true,
-  ref_code: true, // Добавляем поле ref_code в схему вставки
-  parent_ref_code: true, // Добавляем поле parent_ref_code в схему вставки
+export const insertUserSchema = z.object({
+  telegram_id: z.number().optional(), // bigint({ mode: "number" }).unique()
+  guest_id: z.string().optional(), // text().unique()
+  username: z.string().optional(), // text()
+  wallet: z.string().optional(), // text()
+  ton_wallet_address: z.string().optional(), // text()
+  ref_code: z.string().optional(), // text().unique()
+  parent_ref_code: z.string().optional(), // text()
+  // Вставляемые поля balance_uni, balance_ton имеют default значения, не требуются при insert
+  // uni_deposit_amount, uni_farming_balance, uni_farming_rate, uni_farming_deposit имеют default
+  // timestamp поля created_at, checkin_last_date, uni_farming_start_timestamp, uni_farming_last_update, uni_farming_activated_at необязательны или имеют default
+  // checkin_streak имеет default
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // Схемы для таблицы farming_deposits
-export const insertFarmingDepositSchema = createInsertSchema(farmingDeposits).pick({
-  user_id: true,
-  amount_uni: true,
-  rate_uni: true,
-  rate_ton: true,
-  last_claim: true,
-  is_boosted: true,
-  deposit_type: true,
-  boost_id: true,
-  expires_at: true
+export const insertFarmingDepositSchema = z.object({
+  user_id: z.number().optional(), // integer().references()
+  amount_uni: z.string().optional(), // numeric()
+  rate_uni: z.string().optional(), // numeric()
+  rate_ton: z.string().optional(), // numeric()
+  last_claim: z.date().optional(), // timestamp()
+  is_boosted: z.boolean().optional(), // boolean().default()
+  deposit_type: z.string().optional(), // text().default()
+  boost_id: z.number().optional(), // integer()
+  expires_at: z.date().optional(), // timestamp()
 });
 
 export type InsertFarmingDeposit = z.infer<typeof insertFarmingDepositSchema>;
@@ -130,20 +133,20 @@ export const transactions = pgTable(
 );
 
 // Схемы для таблицы transactions
-export const insertTransactionSchema = createInsertSchema(transactions).pick({
-  user_id: true,
-  transaction_type: true,
-  currency: true,
-  amount: true,
-  status: true,
-  source: true,
-  category: true,
-  tx_hash: true,
-  description: true,
-  source_user_id: true,
-  wallet_address: true,
-  data: true,
-  created_at: true
+export const insertTransactionSchema = z.object({
+  user_id: z.number().optional(),
+  transaction_type: z.string().optional(),
+  currency: z.string().optional(),
+  amount: z.string().optional(), // numeric в Drizzle -> string в Zod
+  status: z.string().optional(),
+  source: z.string().optional(),
+  category: z.string().optional(),
+  tx_hash: z.string().optional(),
+  description: z.string().optional(),
+  source_user_id: z.number().optional(),
+  wallet_address: z.string().optional(),
+  data: z.string().optional(),
+  created_at: z.date().optional(),
 });
 
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
@@ -173,13 +176,13 @@ export const referrals = pgTable(
 );
 
 // Схемы для таблицы referrals
-export const insertReferralSchema = createInsertSchema(referrals).pick({
-  user_id: true,
-  inviter_id: true,
-  level: true,
-  reward_uni: true,
-  ref_path: true,
-  created_at: true
+export const insertReferralSchema = z.object({
+  user_id: z.number(), // integer().notNull()
+  inviter_id: z.number(), // integer().notNull()
+  level: z.number(), // integer().notNull()
+  reward_uni: z.string().optional(), // numeric
+  ref_path: z.array(z.number()).optional(), // json().array()
+  created_at: z.date().optional(), // timestamp().defaultNow()
 });
 
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
@@ -196,12 +199,12 @@ export const missions = pgTable("missions", {
 });
 
 // Схемы для таблицы missions
-export const insertMissionSchema = createInsertSchema(missions).pick({
-  type: true,
-  title: true,
-  description: true,
-  reward_uni: true,
-  is_active: true
+export const insertMissionSchema = z.object({
+  type: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  reward_uni: z.string().optional(), // numeric
+  is_active: z.boolean().optional(), // boolean().default(true)
 });
 
 export type InsertMission = z.infer<typeof insertMissionSchema>;
@@ -212,14 +215,22 @@ export const userMissions = pgTable("user_missions", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").references(() => users.id),
   mission_id: integer("mission_id").references(() => missions.id),
-  completed_at: timestamp("completed_at").defaultNow()
+  progress: integer("progress").default(0), // Прогресс выполнения миссии
+  is_completed: boolean("is_completed").default(false),
+  completed_at: timestamp("completed_at"),
+  claimed_reward: boolean("claimed_reward").default(false),
+  created_at: timestamp("created_at").defaultNow()
 });
 
 // Схемы для таблицы user_missions
-export const insertUserMissionSchema = createInsertSchema(userMissions).pick({
-  user_id: true,
-  mission_id: true,
-  completed_at: true
+export const insertUserMissionSchema = z.object({
+  user_id: z.number().optional(),
+  mission_id: z.number().optional(),
+  progress: z.number().optional(),
+  is_completed: z.boolean().optional(),
+  completed_at: z.date().optional(),
+  claimed_reward: z.boolean().optional(),
+  created_at: z.date().optional(),
 });
 
 export type InsertUserMission = z.infer<typeof insertUserMissionSchema>;
@@ -237,11 +248,13 @@ export const uniFarmingDeposits = pgTable("uni_farming_deposits", {
 });
 
 // Схемы для таблицы uni_farming_deposits
-export const insertUniFarmingDepositSchema = createInsertSchema(uniFarmingDeposits).pick({
-  user_id: true,
-  amount: true,
-  rate_per_second: true,
-  is_active: true
+export const insertUniFarmingDepositSchema = z.object({
+  user_id: z.number(),
+  amount: z.string(), // numeric().notNull()
+  created_at: z.date().optional(), // timestamp().defaultNow().notNull()
+  rate_per_second: z.string(), // numeric().notNull()
+  last_updated_at: z.date().optional(), // timestamp().defaultNow().notNull()
+  is_active: z.boolean().optional(), // boolean().default(true)
 });
 
 export type InsertUniFarmingDeposit = z.infer<typeof insertUniFarmingDepositSchema>;
@@ -251,50 +264,59 @@ export type UniFarmingDeposit = typeof uniFarmingDeposits.$inferSelect;
 export const boostDeposits = pgTable("boost_deposits", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").notNull().references(() => users.id),
-  boost_id: integer("boost_id").notNull(), // ID буст-пакета
-  start_date: timestamp("start_date").notNull(), // Дата начала срока действия буста
-  end_date: timestamp("end_date").notNull(), // Дата окончания срока действия буста
-  bonus_uni: numeric("bonus_uni", { precision: 18, scale: 6 }).notNull(), // Единоразовый бонус UNI
-  created_at: timestamp("created_at").defaultNow().notNull() // Дата создания записи
+  amount: numeric("amount", { precision: 18, scale: 6 }).notNull(),
+  daily_rate: numeric("daily_rate", { precision: 5, scale: 4 }).notNull(),
+  start_date: timestamp("start_date").defaultNow().notNull(),
+  end_date: timestamp("end_date").notNull(),
+  last_claim: timestamp("last_claim"),
+  total_earned: numeric("total_earned", { precision: 18, scale: 6 }).default("0"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow().notNull()
 });
 
 // Схемы для таблицы boost_deposits
-export const insertBoostDepositSchema = createInsertSchema(boostDeposits).pick({
-  user_id: true,
-  boost_id: true,
-  start_date: true,
-  end_date: true,
-  bonus_uni: true
+export const insertBoostDepositSchema = z.object({
+  user_id: z.number(), // integer().notNull()
+  amount: z.string(), // numeric().notNull()
+  daily_rate: z.string(), // numeric().notNull()
+  start_date: z.date().optional(), // timestamp().defaultNow().notNull()
+  end_date: z.date(), // timestamp().notNull()
+  last_claim: z.date().optional(), // timestamp()
+  total_earned: z.string().optional(), // numeric().default("0")
+  is_active: z.boolean().optional(), // boolean().default(true)
+  created_at: z.date().optional(), // timestamp().defaultNow().notNull()
 });
 
 export type InsertBoostDeposit = z.infer<typeof insertBoostDepositSchema>;
 export type BoostDeposit = typeof boostDeposits.$inferSelect;
 
-// Таблица для хранения TON Boost-депозитов
+// Таблица ton_boost_deposits для отслеживания активных TON Boost депозитов
 export const tonBoostDeposits = pgTable("ton_boost_deposits", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").notNull().references(() => users.id),
-  boost_package_id: integer("boost_package_id").notNull(), // ID пакета (1-4)
-  ton_amount: numeric("ton_amount", { precision: 18, scale: 5 }).notNull(), // Сумма TON в депозите
-  bonus_uni: numeric("bonus_uni", { precision: 18, scale: 6 }).notNull(), // Единоразовый бонус UNI
-  rate_ton_per_second: numeric("rate_ton_per_second", { precision: 20, scale: 18 }).notNull(), // Скорость фарминга TON
-  rate_uni_per_second: numeric("rate_uni_per_second", { precision: 20, scale: 18 }).notNull(), // Скорость фарминга UNI
-  accumulated_ton: numeric("accumulated_ton", { precision: 18, scale: 10 }).default("0"), // Накопленный TON, ожидающий начисления
-  created_at: timestamp("created_at").defaultNow().notNull(), // Дата открытия
-  last_updated_at: timestamp("last_updated_at").defaultNow().notNull(), // Время последнего начисления
-  is_active: boolean("is_active").default(true) // Активен ли буст
+  package_id: integer("package_id").notNull().references(() => tonBoostPackages.id),
+  deposit_ton_amount: numeric("deposit_ton_amount", { precision: 18, scale: 5 }).notNull(),
+  bonus_uni_amount: numeric("bonus_uni_amount", { precision: 18, scale: 6 }).notNull(),
+  start_date: timestamp("start_date").defaultNow().notNull(),
+  end_date: timestamp("end_date").notNull(),
+  last_claim_date: timestamp("last_claim_date"),
+  total_uni_earned: numeric("total_uni_earned", { precision: 18, scale: 6 }).default("0"),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow().notNull()
 });
 
 // Схемы для таблицы ton_boost_deposits
-export const insertTonBoostDepositSchema = createInsertSchema(tonBoostDeposits).pick({
-  user_id: true,
-  boost_package_id: true,
-  ton_amount: true,
-  bonus_uni: true,
-  rate_ton_per_second: true,
-  rate_uni_per_second: true,
-  accumulated_ton: true,
-  is_active: true
+export const insertTonBoostDepositSchema = z.object({
+  user_id: z.number(), // integer().notNull()
+  package_id: z.number(), // integer().notNull()
+  deposit_ton_amount: z.string(), // numeric().notNull()
+  bonus_uni_amount: z.string(), // numeric().notNull()
+  start_date: z.date().optional(), // timestamp().defaultNow().notNull()
+  end_date: z.date(), // timestamp().notNull()
+  last_claim_date: z.date().optional(), // timestamp()
+  total_uni_earned: z.string().optional(), // numeric().default("0")
+  is_active: z.boolean().optional(), // boolean().default(true)
+  created_at: z.date().optional(), // timestamp().defaultNow().notNull()
 });
 
 export type InsertTonBoostDeposit = z.infer<typeof insertTonBoostDepositSchema>;
@@ -314,6 +336,22 @@ export const launchLogs = pgTable("launch_logs", {
   user_id: integer("user_id").references(() => users.id) // Связь с таблицей пользователей (если есть)
 });
 
+// Схемы для таблицы launch_logs
+export const insertLaunchLogSchema = z.object({
+  telegram_user_id: z.number().optional(), // bigint without notNull() is optional number
+  ref_code: z.string().optional(), // text without notNull() is optional string
+  platform: z.string().optional(), // text without notNull() is optional string
+  timestamp: z.date(), // timestamp with .notNull() is required date
+  user_agent: z.string().optional(), // text without notNull() is optional string
+  init_data: z.string().optional(), // text without notNull() is optional string
+  ip_address: z.string().optional(), // text without notNull() is optional string
+  request_id: z.string().optional(), // text without notNull() is optional string
+  user_id: z.number().optional(), // integer without notNull() is optional number
+});
+
+export type InsertLaunchLog = z.infer<typeof insertLaunchLogSchema>;
+export type LaunchLog = typeof launchLogs.$inferSelect;
+
 // Таблица для логирования операций с партициями
 export const partition_logs = pgTable("partition_logs", {
   id: serial("id").primaryKey(),
@@ -324,6 +362,19 @@ export const partition_logs = pgTable("partition_logs", {
   status: text("status").notNull(), // success, error
   error_details: text("error_details")
 });
+
+// Схемы для таблицы partition_logs
+export const insertPartitionLogSchema = z.object({
+  operation: z.string(), // text().notNull()
+  partition_name: z.string().optional(), // text()
+  message: z.string(), // text().notNull()
+  timestamp: z.date().optional(), // timestamp().defaultNow().notNull()
+  status: z.string(), // text().notNull()
+  error_details: z.string().optional(), // text()
+});
+
+export type InsertPartitionLog = z.infer<typeof insertPartitionLogSchema>;
+export type PartitionLog = typeof partition_logs.$inferSelect;
 
 // Таблица для логов распределения реферальных вознаграждений
 export const reward_distribution_logs = pgTable("reward_distribution_logs", {
@@ -340,6 +391,24 @@ export const reward_distribution_logs = pgTable("reward_distribution_logs", {
   error_message: text("error_message"), // Ошибка при обработке, если была
   completed_at: timestamp("completed_at") // Время завершения обработки
 });
+
+// Схемы для таблицы reward_distribution_logs
+export const insertRewardDistributionLogSchema = z.object({
+  batch_id: z.string(), // text().notNull()
+  source_user_id: z.number(), // integer().notNull()
+  earned_amount: z.string(), // numeric().notNull()
+  currency: z.string(), // text().notNull()
+  processed_at: z.date().optional(), // timestamp()
+  status: z.string().optional(), // text().default("pending")
+  levels_processed: z.number().optional(), // integer()
+  inviter_count: z.number().optional(), // integer()
+  total_distributed: z.string().optional(), // numeric()
+  error_message: z.string().optional(), // text()
+  completed_at: z.date().optional(), // timestamp()
+});
+
+export type InsertRewardDistributionLog = z.infer<typeof insertRewardDistributionLogSchema>;
+export type RewardDistributionLog = typeof reward_distribution_logs.$inferSelect;
 
 // Таблица для метрик производительности
 export const performance_metrics = pgTable(
@@ -362,43 +431,13 @@ export const performance_metrics = pgTable(
   }
 );
 
-// Схемы для таблицы partition_logs
-export const insertPartitionLogSchema = createInsertSchema(partition_logs).pick({
-  operation: true,
-  partition_name: true,
-  message: true,
-  timestamp: true,
-  status: true,
-  error_details: true
-});
-
-export type InsertPartitionLog = z.infer<typeof insertPartitionLogSchema>;
-export type PartitionLog = typeof partition_logs.$inferSelect;
-
-// Схемы для таблицы reward_distribution_logs
-export const insertRewardDistributionLogSchema = createInsertSchema(reward_distribution_logs).pick({
-  batch_id: true,
-  source_user_id: true,
-  earned_amount: true,
-  currency: true,
-  status: true,
-  levels_processed: true,
-  inviter_count: true,
-  total_distributed: true,
-  error_message: true,
-  completed_at: true
-});
-
-export type InsertRewardDistributionLog = z.infer<typeof insertRewardDistributionLogSchema>;
-export type RewardDistributionLog = typeof reward_distribution_logs.$inferSelect;
-
 // Схемы для таблицы performance_metrics
-export const insertPerformanceMetricSchema = createInsertSchema(performance_metrics).pick({
-  operation: true,
-  batch_id: true,
-  duration_ms: true,
-  timestamp: true,
-  details: true
+export const insertPerformanceMetricSchema = z.object({
+  operation: z.string(), // text().notNull()
+  batch_id: z.string().optional(), // text()
+  duration_ms: z.string(), // numeric().notNull()
+  timestamp: z.date().optional(), // timestamp().defaultNow().notNull()
+  details: z.string().optional(), // text()
 });
 
 export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
@@ -416,17 +455,19 @@ export const boostPackages = pgTable("boost_packages", {
   created_at: timestamp("created_at").defaultNow()
 });
 
-// Таблица ton_boost_packages для конфигурации TON Boost пакетов
-export const tonBoostPackages = pgTable("ton_boost_packages", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(), // Starter Boost, Standard Boost, Advanced Boost, Premium Boost
-  description: text("description"),
-  price_ton: numeric("price_ton", { precision: 18, scale: 5 }).notNull(), // Стоимость в TON
-  bonus_uni: numeric("bonus_uni", { precision: 18, scale: 6 }).notNull(), // Единоразовый бонус UNI
-  daily_rate: numeric("daily_rate", { precision: 5, scale: 3 }).notNull(), // Ставка в день (0.005, 0.01, 0.02, 0.025)
-  is_active: boolean("is_active").default(true),
-  created_at: timestamp("created_at").defaultNow()
+// Схемы для таблицы boost_packages
+export const insertBoostPackageSchema = z.object({
+  name: z.string(), // text().notNull()
+  description: z.string().optional(), // text()
+  price_uni: z.string(), // numeric().notNull()
+  rate_multiplier: z.string(), // numeric().notNull()
+  duration_days: z.number().optional(), // integer().default(365)
+  is_active: z.boolean().optional(), // boolean().default(true)
+  created_at: z.date().optional(), // timestamp().defaultNow()
 });
+
+export type InsertBoostPackage = z.infer<typeof insertBoostPackageSchema>;
+export type BoostPackage = typeof boostPackages.$inferSelect;
 
 // Таблица user_boosts для отслеживания активных бустов пользователей
 export const userBoosts = pgTable("user_boosts", {
@@ -443,58 +484,45 @@ export const userBoosts = pgTable("user_boosts", {
   created_at: timestamp("created_at").defaultNow().notNull()
 });
 
-// Схемы для таблицы boost_packages
-export const insertBoostPackageSchema = createInsertSchema(boostPackages).pick({
-  name: true,
-  description: true,
-  price_uni: true,
-  rate_multiplier: true,
-  duration_days: true,
-  is_active: true
-});
-
-export type InsertBoostPackage = z.infer<typeof insertBoostPackageSchema>;
-export type BoostPackage = typeof boostPackages.$inferSelect;
-
 // Схемы для таблицы user_boosts
 export const insertUserBoostSchema = z.object({
-  user_id: z.number(), // integer without notNull() является необязательным числом
-  package_id: z.number(), // integer без notNull() является необязательным числом
-  amount: z.number(),
-  daily_rate: z.number(),
-  start_date: z.date(),
-  end_date: z.date(),
-  is_active: z.boolean().optional(),
+  user_id: z.number(), // integer().notNull()
+  package_id: z.number(), // integer().notNull()
+  amount: z.string(), // numeric().notNull()
+  daily_rate: z.string(), // numeric().notNull()
+  start_date: z.date().optional(), // timestamp().defaultNow().notNull()
+  end_date: z.date(), // timestamp().notNull()
+  last_claim: z.date().optional(), // timestamp()
+  total_earned: z.string().optional(), // numeric().default("0")
+  is_active: z.boolean().optional(), // boolean().default(true)
+  created_at: z.date().optional(), // timestamp().defaultNow().notNull()
 });
 
 export type InsertUserBoost = z.infer<typeof insertUserBoostSchema>;
 export type UserBoost = typeof userBoosts.$inferSelect;
 
+// Таблица ton_boost_packages для конфигурации TON Boost пакетов
+export const tonBoostPackages = pgTable("ton_boost_packages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Starter Boost, Standard Boost, Advanced Boost, Premium Boost
+  description: text("description"),
+  price_ton: numeric("price_ton", { precision: 18, scale: 5 }).notNull(), // Стоимость в TON
+  bonus_uni: numeric("bonus_uni", { precision: 18, scale: 6 }).notNull(), // Единоразовый бонус UNI
+  daily_rate: numeric("daily_rate", { precision: 5, scale: 3 }).notNull(), // Ставка в день (0.005, 0.01, 0.02, 0.025)
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow()
+});
+
 // Схемы для таблицы ton_boost_packages
 export const insertTonBoostPackageSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  price_ton: z.number(),
-  bonus_uni: z.number(),
-  daily_rate: z.number(),
-  is_active: z.boolean().optional(),
+  name: z.string(), // text().notNull()
+  description: z.string().optional(), // text()
+  price_ton: z.string(), // numeric().notNull()
+  bonus_uni: z.string(), // numeric().notNull()
+  daily_rate: z.string(), // numeric().notNull()
+  is_active: z.boolean().optional(), // boolean().default(true)
+  created_at: z.date().optional(), // timestamp().defaultNow()
 });
 
 export type InsertTonBoostPackage = z.infer<typeof insertTonBoostPackageSchema>;
 export type TonBoostPackage = typeof tonBoostPackages.$inferSelect;
-
-// Схемы для таблицы launch_logs
-export const insertLaunchLogSchema = z.object({
-  telegram_user_id: z.number().optional(), // bigint without notNull() является необязательным числом
-  ref_code: z.string().optional(), // text без notNull() является необязательной строкой
-  platform: z.string().optional(), // text без notNull() является необязательной строкой
-  timestamp: z.date(), // timestamp с .notNull() является обязательной датой
-  user_agent: z.string().optional(), // text без notNull() является необязательной строкой
-  init_data: z.string().optional(), // text без notNull() является необязательной строкой
-  ip_address: z.string().optional(), // text без notNull() является необязательной строкой
-  request_id: z.string().optional(), // text без notNull() является необязательной строкой
-  user_id: z.number().optional(), // integer без notNull() является необязательным числом
-});
-
-export type InsertLaunchLog = z.infer<typeof insertLaunchLogSchema>;
-export type LaunchLog = typeof launchLogs.$inferSelect;
