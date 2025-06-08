@@ -31,8 +31,8 @@ async function checkEnvironmentVariables() {
     'CORS_ORIGIN'
   ];
   
-  const missing = [];
-  const present = [];
+  const missing: string[] = [];
+  const present: string[] = [];
   
   required.forEach(key => {
     if (process.env[key]) {

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.7.0",
+    "axios": "^1.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "drizzle-orm": "^0.29.0",
@@ -43,4 +44,3 @@
     "typescript": "^5.3.2"
   }
 }
- 

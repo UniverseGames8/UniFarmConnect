@@ -133,18 +133,24 @@ export class DailyBonusService {
           eq(transactions.user_id, parseInt(userId)),
           eq(transactions.type, 'daily_bonus')
         ))
-        .where(transactions.created_at >= startDate)
-        .where(transactions.created_at <= endDate)
         .orderBy(transactions.created_at);
+
+      // Фильтрация по датам после выборки
+      const filteredHistory = history.filter((tx: any) => {
+        const createdAt = tx.created_at ? new Date(tx.created_at) : null;
+        return createdAt && createdAt >= startDate && createdAt <= endDate;
+      });
 
       const days = [];
       const currentDate = new Date(startDate);
 
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        const claim = history.find(tx => 
-          new Date(tx.created_at).toISOString().split('T')[0] === dateStr
-        );
+        const claim = filteredHistory.find((tx: any) => {
+          if (!tx.created_at) return false;
+          const claimDate = tx.created_at ? new Date(tx.created_at) : null;
+          return claimDate && claimDate.toISOString().split('T')[0] === dateStr;
+        });
 
         days.push({
           date: dateStr,
@@ -165,8 +171,8 @@ export class DailyBonusService {
         month,
         year,
         days,
-        total_claimed_this_month: history.reduce((sum, tx) => sum + parseFloat(tx.amount), 0).toString(),
-        days_claimed: history.length,
+        total_claimed_this_month: filteredHistory.reduce((sum: number, tx: any) => sum + parseFloat(tx.amount), 0).toString(),
+        days_claimed: filteredHistory.length,
         current_streak: user?.checkin_streak || 0
       };
     } catch (error) {
@@ -200,8 +206,16 @@ export class DailyBonusService {
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - now.getDay());
 
-      const thisMonthClaims = history.filter(tx => new Date(tx.created_at) >= monthStart);
-      const thisWeekClaims = history.filter(tx => new Date(tx.created_at) >= weekStart);
+      const thisMonthClaims = history.filter((tx: any) => {
+        if (!tx.created_at) return false;
+        const createdAt = new Date(tx.created_at);
+        return createdAt >= monthStart;
+      });
+      const thisWeekClaims = history.filter((tx: any) => {
+        if (!tx.created_at) return false;
+        const createdAt = new Date(tx.created_at);
+        return createdAt >= weekStart;
+      });
 
       return {
         total_days_claimed: history.length,
@@ -240,12 +254,14 @@ export class DailyBonusService {
 
       const now = new Date();
       const lastCheckin = user.checkin_last_date;
+      let nextClaimTime: Date;
+      if (lastCheckin) {
+        nextClaimTime = new Date(lastCheckin.getTime() + 24 * 60 * 60 * 1000);
+      } else {
+        nextClaimTime = now;
+      }
       const canClaim = !lastCheckin || 
         new Date(lastCheckin).toISOString().split('T')[0] !== now.toISOString().split('T')[0];
-
-      const nextClaimTime = lastCheckin 
-        ? new Date(lastCheckin.getTime() + 24 * 60 * 60 * 1000)
-        : now;
 
       const timeUntilNextClaim = canClaim ? 0 : nextClaimTime.getTime() - now.getTime();
 

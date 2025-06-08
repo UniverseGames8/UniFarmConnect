@@ -10,6 +10,8 @@ import { config, logger, globalErrorHandler, notFoundHandler } from '../core';
 import { db } from '../core/db';
 import { users, transactions, missions } from '../shared/schema';
 import { eq, desc, sql } from 'drizzle-orm';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // API будет создан прямо в сервере
 

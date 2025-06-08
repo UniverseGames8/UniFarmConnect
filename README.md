@@ -1,71 +1,113 @@
-# UniFarm Connect
+# UniFarm
 
-Telegram Mini App для фарминга и управления криптовалютными активами.
+UniFarm - это платформа для управления фермерскими хозяйствами с интеграцией Telegram бота.
 
 ## Структура проекта
 
-```
-uni-farm/
-├── client/             # React + TypeScript frontend
-├── server/             # Node.js/Express backend
-├── .gitignore
-├── README.md
-├── vercel.json         # Конфигурация Vercel
-├── railway.json        # Конфигурация Railway
-├── gpt_rules.md        # Правила работы AI
-└── redmap.md           # Документация бизнес-логики
-```
+- `client/` - Frontend приложение (React)
+- `server/` - Backend приложение (Node.js + Express)
 
-## Запуск проекта
+## Развертывание на Railway
 
-### Фронтенд (client/)
+1. Создайте аккаунт на [Railway](https://railway.app/)
+2. Установите Railway CLI:
+   ```bash
+   npm i -g @railway/cli
+   ```
+3. Войдите в аккаунт Railway:
+   ```bash
+   railway login
+   ```
+4. Инициализируйте проект:
+   ```bash
+   railway init
+   ```
+5. Настройте переменные окружения в Railway Dashboard:
+   - `PORT` - порт для сервера (по умолчанию 3000)
+   - `MONGODB_URI` - URI для подключения к MongoDB
+   - `TELEGRAM_BOT_TOKEN` - токен Telegram бота
+   - `TELEGRAM_WEBHOOK_URL` - URL для вебхука Telegram (будет установлен автоматически)
+   - `JWT_SECRET` - секретный ключ для JWT
+   - `NODE_ENV` - окружение (production)
 
-```bash
-cd client
-npm install
-npm run dev
-```
+6. Задеплойте проект:
+   ```bash
+   railway up
+   ```
 
-Фронтенд будет доступен по адресу: http://localhost:5173
+## Локальная разработка
 
-### Бэкенд (server/)
+1. Клонируйте репозиторий:
+   ```bash
+   git clone <repository-url>
+   cd unifarm
+   ```
 
-```bash
-cd server
-npm install
-npm run dev
-```
+2. Установите зависимости:
+   ```bash
+   # Установка зависимостей для frontend
+   cd client
+   npm install
 
-Бэкенд будет доступен по адресу: http://localhost:3000
+   # Установка зависимостей для backend
+   cd ../server
+   npm install
+   ```
 
-## Деплой
+3. Создайте файл `.env` в корневой директории на основе `.env.example`
 
-### Фронтенд (Vercel)
-- Автоматический деплой при пуше в main
-- Конфигурация в vercel.json
+4. Запустите приложение:
+   ```bash
+   # Запуск frontend
+   cd client
+   npm run dev
 
-### Бэкенд (Railway)
-- Автоматический деплой при пуше в main
-- Конфигурация в railway.json
+   # Запуск backend
+   cd ../server
+   npm run dev
+   ```
 
 ## API Endpoints
 
-Все API endpoints доступны по базовому пути `/api/v2/`:
+### Аутентификация
+- `POST /api/auth/register` - Регистрация нового пользователя
+- `POST /api/auth/login` - Вход в систему
+- `GET /api/auth/me` - Получение информации о текущем пользователе
 
-- `/api/v2/me` - данные пользователя
-- `/api/v2/wallet/balance` - баланс кошелька
-- `/api/v2/farming/status` - статус фарминга
-- `/api/v2/missions` - список заданий
-- `/api/v2/referral` - реферальная система
+### Фермы
+- `GET /api/farms` - Получение списка ферм
+- `POST /api/farms` - Создание новой фермы
+- `GET /api/farms/:id` - Получение информации о ферме
+- `PUT /api/farms/:id` - Обновление информации о ферме
+- `DELETE /api/farms/:id` - Удаление фермы
 
-## Разработка
+### Животные
+- `GET /api/animals` - Получение списка животных
+- `POST /api/animals` - Добавление нового животного
+- `GET /api/animals/:id` - Получение информации о животном
+- `PUT /api/animals/:id` - Обновление информации о животном
+- `DELETE /api/animals/:id` - Удаление животного
 
-1. Создайте ветку для новой функциональности
-2. Внесите изменения
-3. Создайте Pull Request
-4. После проверки изменения будут объединены в main
+### Telegram Webhook
+- `POST /api/telegram/webhook` - Endpoint для вебхука Telegram бота
 
-## Документация
+## Технологии
 
-- `gpt_rules.md` - правила работы с AI
-- `redmap.md` - документация бизнес-логики 
+- Frontend:
+  - React
+  - TypeScript
+  - Tailwind CSS
+  - React Query
+  - React Router
+
+- Backend:
+  - Node.js
+  - Express
+  - TypeScript
+  - MongoDB
+  - JWT
+  - Telegram Bot API
+
+## Лицензия
+
+MIT 
