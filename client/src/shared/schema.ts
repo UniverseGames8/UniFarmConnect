@@ -457,27 +457,27 @@ export type InsertBoostPackage = z.infer<typeof insertBoostPackageSchema>;
 export type BoostPackage = typeof boostPackages.$inferSelect;
 
 // Схемы для таблицы user_boosts
-export const insertUserBoostSchema = createInsertSchema(userBoosts).pick({
-  user_id: true,
-  package_id: true,
-  amount: true,
-  daily_rate: true,
-  start_date: true,
-  end_date: true,
-  is_active: true
+export const insertUserBoostSchema = z.object({
+  user_id: z.number(), // integer without notNull() является необязательным числом
+  package_id: z.number(), // integer без notNull() является необязательным числом
+  amount: z.number(),
+  daily_rate: z.number(),
+  start_date: z.date(),
+  end_date: z.date(),
+  is_active: z.boolean().optional(),
 });
 
 export type InsertUserBoost = z.infer<typeof insertUserBoostSchema>;
 export type UserBoost = typeof userBoosts.$inferSelect;
 
 // Схемы для таблицы ton_boost_packages
-export const insertTonBoostPackageSchema = createInsertSchema(tonBoostPackages).pick({
-  name: true,
-  description: true,
-  price_ton: true,
-  bonus_uni: true,
-  daily_rate: true,
-  is_active: true
+export const insertTonBoostPackageSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  price_ton: z.number(),
+  bonus_uni: z.number(),
+  daily_rate: z.number(),
+  is_active: z.boolean().optional(),
 });
 
 export type InsertTonBoostPackage = z.infer<typeof insertTonBoostPackageSchema>;
