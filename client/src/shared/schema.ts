@@ -484,16 +484,16 @@ export type InsertTonBoostPackage = z.infer<typeof insertTonBoostPackageSchema>;
 export type TonBoostPackage = typeof tonBoostPackages.$inferSelect;
 
 // Схемы для таблицы launch_logs
-export const insertLaunchLogSchema = createInsertSchema(launchLogs).pick({
-  telegram_user_id: true,
-  ref_code: true,
-  platform: true,
-  timestamp: true,
-  user_agent: true, 
-  init_data: true,
-  ip_address: true,
-  request_id: true,
-  user_id: true
+export const insertLaunchLogSchema = z.object({
+  telegram_user_id: z.number().optional(), // bigint without notNull() является необязательным числом
+  ref_code: z.string().optional(), // text без notNull() является необязательной строкой
+  platform: z.string().optional(), // text без notNull() является необязательной строкой
+  timestamp: z.date(), // timestamp с .notNull() является обязательной датой
+  user_agent: z.string().optional(), // text без notNull() является необязательной строкой
+  init_data: z.string().optional(), // text без notNull() является необязательной строкой
+  ip_address: z.string().optional(), // text без notNull() является необязательной строкой
+  request_id: z.string().optional(), // text без notNull() является необязательной строкой
+  user_id: z.number().optional(), // integer без notNull() является необязательным числом
 });
 
 export type InsertLaunchLog = z.infer<typeof insertLaunchLogSchema>;
