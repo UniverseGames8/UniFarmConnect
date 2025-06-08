@@ -13,6 +13,18 @@ export const WebSocketTester = () => {
   const [isTesting, setIsTesting] = useState(false);
   const { isConnected, lastMessage } = useWebSocket();
 
+  const [webApp, setWebApp] = useState<any | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      setWebApp(tg);
+      tg.ready();
+      setIsReady(true);
+    }
+  }, []);
+
   const testConnection = (): WebSocketTest => {
     return {
       type: 'connection',

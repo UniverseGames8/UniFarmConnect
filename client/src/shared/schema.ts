@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, bigint, timestamp, numeric, json, jsonb, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, bigint, timestamp, numeric, json, index } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 // Таблица с аутентификацией по имени пользователя и паролю (пароль не обязателен для Telegram)
