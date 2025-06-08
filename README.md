@@ -44,28 +44,28 @@ UniFarm - это платформа для управления фермерск
    ```
 
 2. Установите зависимости:
-   ```bash
+```bash
    # Установка зависимостей для frontend
-   cd client
-   npm install
+cd client
+npm install
 
    # Установка зависимостей для backend
    cd ../server
    npm install
-   ```
+```
 
 3. Создайте файл `.env` в корневой директории на основе `.env.example`
 
 4. Запустите приложение:
-   ```bash
+```bash
    # Запуск frontend
    cd client
    npm run dev
 
    # Запуск backend
    cd ../server
-   npm run dev
-   ```
+npm run dev
+```
 
 ## API Endpoints
 

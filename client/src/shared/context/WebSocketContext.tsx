@@ -13,7 +13,6 @@ interface WebSocketProviderProps {
 }
 
 export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const { user } = useAuthContext();
@@ -48,8 +47,6 @@ export const WebSocketProvider = ({ children }: WebSocketProviderProps) => {
         console.error('[WebSocket] Ошибка парсинга сообщения:', error);
       }
     };
-
-    setSocket(ws);
 
     return () => {
       ws.close();

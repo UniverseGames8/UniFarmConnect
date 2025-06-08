@@ -5,6 +5,8 @@ interface TelegramWebApp {
   showPopup(params: { title?: string; message: string; buttons?: Array<{ id: string; type: string; text: string }> }): void;
   showAlert(message: string, callback?: () => void): void;
   showConfirm(message: string, callback?: (confirmed: boolean) => void): void;
+  setHeaderColor(color: string): void;
+  setBackgroundColor(color: string): void;
   MainButton: {
     text: string;
     color: string;

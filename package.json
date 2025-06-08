@@ -34,5 +34,9 @@
     "node": ">=18.0.0"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "drizzle-zod": "^0.8.2",
+    "zod": "^3.25.56"
+  }
 }
