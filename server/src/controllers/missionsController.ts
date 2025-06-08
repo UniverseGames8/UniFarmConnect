@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { MissionsService } from '../services/missionsService';
+import { MissionsService } from '../../../modules/missions/service';
 
 export const missionsController = {
   /**
@@ -10,7 +10,8 @@ export const missionsController = {
       const userId = req.params.userId;
       console.log(`[MissionsController] Получение активных миссий для пользователя ${userId}`);
       
-      const missions = await MissionsService.getActiveMissions(userId);
+      const missionsService = new MissionsService();
+      const missions = await missionsService.getActiveMissionsByTelegramId(userId);
       
       res.json({
         success: true,
@@ -43,7 +44,8 @@ export const missionsController = {
         return;
       }
 
-      const result = await MissionsService.completeMission(userId, missionId);
+      const missionsService = new MissionsService();
+      const result = await missionsService.completeMission(userId, missionId);
       
       res.json({
         success: true,
@@ -76,7 +78,8 @@ export const missionsController = {
         return;
       }
 
-      const result = await MissionsService.claimMissionReward(userId, missionId);
+      const missionsService = new MissionsService();
+      const result = await missionsService.claimMissionReward(userId, missionId);
       
       res.json({
         success: true,
@@ -99,7 +102,8 @@ export const missionsController = {
       const userId = req.params.userId;
       console.log(`[MissionsController] Получение прогресса миссий для пользователя ${userId}`);
       
-      const progress = await MissionsService.getMissionProgress(userId);
+      const missionsService = new MissionsService();
+      const progress = await missionsService.getUserMissionProgress(userId);
       
       res.json({
         success: true,

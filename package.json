@@ -25,7 +25,10 @@
     "lint:server": "cd server && npm run lint"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "concurrently": "^8.2.2",
+    "vite": "^6.3.5"
   },
   "engines": {
     "node": ">=18.0.0"

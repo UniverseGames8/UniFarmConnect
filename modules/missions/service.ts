@@ -1,5 +1,5 @@
-import { db } from '../../core/db';
-import { missions, userMissions, users } from '../../shared/schema';
+import { db } from '../../server/src/db';
+import { missions, userMissions, users } from '../../server/src/db/schema';
 import { eq, and, notInArray } from 'drizzle-orm';
 
 export class MissionsService {
@@ -9,7 +9,7 @@ export class MissionsService {
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.telegram_id, parseInt(telegramId)))
+        .where(eq(users.telegram_id, telegramId))
         .limit(1);
 
       if (!user) {
@@ -28,15 +28,15 @@ export class MissionsService {
       let activeMissions = await db
         .select()
         .from(missions)
-        .where(eq(missions.is_active, true));
+        .where(eq(missions.status, 'active'));
 
       // Добавляем информацию о выполнении
       return activeMissions.map(mission => ({
         id: mission.id,
         title: mission.title,
         description: mission.description,
-        reward: parseFloat(mission.reward_uni || "0"),
-        type: mission.mission_type,
+        reward: parseFloat(mission.reward_amount || "0"),
+        type: mission.type,
         completed: completedMissionIds.includes(mission.id),
         completed_at: null // Можно добавить если нужно
       }));
@@ -57,16 +57,15 @@ export class MissionsService {
       const completedMissionIds = completedMissions.map(m => m.mission_id);
 
       // Получаем доступные миссии (активные и не завершенные)
-      let query = db
+      let availableMissions = await db
         .select()
         .from(missions)
-        .where(eq(missions.is_active, true));
+        .where(eq(missions.status, 'active'));
 
       if (completedMissionIds.length > 0) {
-        query = query.where(notInArray(missions.id, completedMissionIds));
+        availableMissions = availableMissions.filter(m => !completedMissionIds.includes(m.id));
       }
 
-      const availableMissions = await query;
       return availableMissions;
     } catch (error) {
       console.error('[MissionsService] Ошибка получения миссий:', error);
@@ -127,7 +126,7 @@ export class MissionsService {
         .where(eq(missions.id, parseInt(missionId)))
         .limit(1);
 
-      if (!mission || !mission.reward_uni) {
+      if (!mission || !mission.reward_amount) {
         return { amount: "0", claimed: false };
       }
 
@@ -139,7 +138,7 @@ export class MissionsService {
         .limit(1);
 
       if (user) {
-        const newBalance = String(parseFloat(user.balance_uni || "0") + parseFloat(mission.reward_uni));
+        const newBalance = String(parseFloat(user.balance_uni || "0") + parseFloat(mission.reward_amount));
         
         await db
           .update(users)
@@ -149,7 +148,7 @@ export class MissionsService {
         // Миссии НЕ дают реферальные бонусы согласно бизнес-модели
       }
 
-      return { amount: mission.reward_uni, claimed: true };
+      return { amount: mission.reward_amount, claimed: true };
     } catch (error) {
       console.error('[MissionsService] Ошибка получения награды:', error);
       return { amount: "0", claimed: false };
@@ -164,7 +163,7 @@ export class MissionsService {
           completed_at: userMissions.completed_at,
           title: missions.title,
           description: missions.description,
-          reward_uni: missions.reward_uni
+          reward_amount: missions.reward_amount
         })
         .from(userMissions)
         .leftJoin(missions, eq(userMissions.mission_id, missions.id))

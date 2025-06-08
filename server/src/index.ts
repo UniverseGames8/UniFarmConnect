@@ -1,11 +1,11 @@
 import express from 'express';
 import cors from 'cors';
-import { config } from 'dotenv';
+import { config } from './config';
 import { db } from './db';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { errorHandler } from './middleware/errorHandler';
 import { telegramAuthMiddleware } from './middleware/telegramAuth';
-import { apiPrefix } from './config';
+const apiPrefix = config.apiPrefix;
 
 // Импорт маршрутов
 import userRoutes from './routes/userRoutes';
@@ -18,9 +18,6 @@ import boostRoutes from './routes/boostRoutes';
 import adminRoutes from './routes/adminRoutes';
 import telegramRoutes from './routes/telegramRoutes';
 import authRoutes from './routes/authRoutes';
-
-// Загрузка переменных окружения
-config();
 
 const app = express();
 
