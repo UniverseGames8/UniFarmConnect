@@ -1,4 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
+import { logger } from '../utils/logger';
+
+export class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public message: string,
+    public isOperational = true
+  ) {
+    super(message);
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
+}
 
 export const errorHandler = (
   err: Error,
@@ -6,28 +19,33 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('[ErrorHandler]', err);
+  logger.error('Error:', {
+    error: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
 
-  // Определяем тип ошибки и соответствующий статус
-  let status = 500;
-  let message = 'Внутренняя ошибка сервера';
-
-  if (err.name === 'ValidationError') {
-    status = 400;
-    message = err.message;
-  } else if (err.name === 'UnauthorizedError') {
-    status = 401;
-    message = 'Необходима авторизация';
-  } else if (err.name === 'ForbiddenError') {
-    status = 403;
-    message = 'Доступ запрещен';
-  } else if (err.name === 'NotFoundError') {
-    status = 404;
-    message = 'Ресурс не найден';
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      status: 'error',
+      message: err.message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    });
   }
 
-  res.status(status).json({
-    success: false,
-    error: message
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Validation error',
+      errors: err.errors,
+    });
+  }
+
+  // Default error
+  return res.status(500).json({
+    status: 'error',
+    message: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }; 
