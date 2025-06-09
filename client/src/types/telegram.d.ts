@@ -16,6 +16,7 @@ interface TelegramWebApp {
     isProgressVisible: boolean;
     setText(text: string): void;
     onClick(callback: () => void): void;
+    offClick(callback: () => void): void;
     show(): void;
     hide(): void;
     enable(): void;
@@ -26,6 +27,7 @@ interface TelegramWebApp {
   BackButton: {
     isVisible: boolean;
     onClick(callback: () => void): void;
+    offClick(callback: () => void): void;
     show(): void;
     hide(): void;
   };
@@ -40,7 +42,7 @@ interface TelegramWebApp {
     button_color?: string;
     button_text_color?: string;
   };
-  initData: string;
+  initData?: string;
   initDataUnsafe: {
     query_id?: string;
     user?: {
@@ -52,6 +54,7 @@ interface TelegramWebApp {
     };
     auth_date?: number;
     hash?: string;
+    start_param?: string;
   };
   isExpanded: boolean;
   viewportHeight: number;
@@ -74,6 +77,14 @@ interface TelegramWebApp {
     impactOccurred(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'): void;
     notificationOccurred(type: 'error' | 'success' | 'warning'): void;
     selectionChanged(): void;
+  };
+  CloudStorage: {
+    setItem(key: string, value: string, callback?: (success: boolean) => void): void;
+    getItem(key: string, callback?: (value: string | null) => void): void;
+    getItems(keys: string[], callback?: (values: { [key: string]: string | null }) => void): void;
+    removeItem(key: string, callback?: (success: boolean) => void): void;
+    removeItems(keys: string[], callback?: (success: boolean) => void): void;
+    getKeys(callback?: (keys: string[]) => void): void;
   };
 }
 

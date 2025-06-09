@@ -7,18 +7,6 @@ export interface TelegramUser {
   photo_url?: string;
 }
 
-export interface TelegramWebApp {
-  initData: string;
-  initDataUnsafe: {
-    user?: TelegramUser;
-    auth_date?: number;
-    hash?: string;
-  };
-  ready(): void;
-  expand(): void;
-  close(): void;
-}
-
 export interface AuthState {
   isAuthenticated: boolean;
   user: TelegramUser | null;

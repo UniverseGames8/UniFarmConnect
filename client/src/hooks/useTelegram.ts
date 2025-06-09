@@ -8,47 +8,10 @@ interface TelegramUser {
   language_code?: string;
 }
 
-interface TelegramWebApp {
-  initData: string;
-  initDataUnsafe: {
-    user?: TelegramUser;
-    start_param?: string;
-  };
-  ready: () => void;
-  expand: () => void;
-  close: () => void;
-  MainButton: {
-    text: string;
-    color: string;
-    textColor: string;
-    isVisible: boolean;
-    isActive: boolean;
-    show: () => void;
-    hide: () => void;
-    onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
-  };
-  BackButton: {
-    isVisible: boolean;
-    show: () => void;
-    hide: () => void;
-    onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
-  };
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
-}
-
 export function useTelegram() {
   const [isReady, setIsReady] = useState(false);
   const [user, setUser] = useState<TelegramUser | null>(null);
-  const [initData, setInitData] = useState<string>('');
+  const [initData, setInitData] = useState<string | null>(null);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -65,7 +28,7 @@ export function useTelegram() {
           language_code: tg.initDataUnsafe.user.language_code
         });
       }
-      setInitData(tg.initData);
+      setInitData(tg.initData || null);
       
       // Expand the app to full height
       tg.expand();

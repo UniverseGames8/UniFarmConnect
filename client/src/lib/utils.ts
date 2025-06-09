@@ -28,9 +28,9 @@ export function formatNumberWithPrecision(value: number, precision: number = 2):
     // Преобразуем научную запись в десятичную форму
     const match = formatted.match(/^(\d+\.\d+)e([+-])(\d+)$/);
     if (match) {
-      const base = parseFloat(match[1]);
-      const sign = match[2];
-      const exponent = parseInt(match[3], 10);
+      const base = parseFloat(match[1] || '0'); // Убедиться, что это строка
+      const sign = match[2] || ''; // Убедиться, что это строка
+      const exponent = parseInt(match[3] || '0', 10); // Убедиться, что это строка
       
       if (sign === '-') {
         // Для отрицательной степени (очень маленькие числа)
@@ -59,10 +59,6 @@ export function formatNumberWithPrecision(value: number, precision: number = 2):
 }
 
 /**
- * Извлекает userId из параметров URL Telegram Mini App
- * @returns userId или null, если не найден
- */
-/**
  * Получает userId из различных источников с приоритетом:
  * 1. Telegram WebApp initDataUnsafe
  * 2. URL параметры
@@ -76,7 +72,7 @@ export function getUserIdFromURL(): string | null {
   // АУДИТ: Расширенная проверка данных из Telegram WebApp
   if (window.Telegram?.WebApp) {
     console.log('[АУДИТ] [utils] Telegram WebApp object available:', {
-      initDataLength: typeof window.Telegram.WebApp.initData === 'string' ? window.Telegram.WebApp.initData.length : 0,
+      initDataLength: window.Telegram.WebApp.initData?.length || 0,
       initDataUnsafe: window.Telegram.WebApp.initDataUnsafe ? 'present' : 'missing',
       userObject: window.Telegram.WebApp.initDataUnsafe?.user ? 'present' : 'missing',
       userId: window.Telegram.WebApp.initDataUnsafe?.user?.id || 'none'
@@ -177,12 +173,9 @@ export function getReferrerIdFromURL(): string | null {
     if (window.Telegram?.WebApp) {
       console.log('[АУДИТ] [utils] Checking Telegram WebApp for startParam:', {
         webAppAvailable: !!window.Telegram.WebApp,
-        // @ts-ignore - startParam может быть недоступен в типе, но доступен в реальном API
-        startParamAvailable: !!window.Telegram.WebApp.startParam,
-        // @ts-ignore
-        startParamValue: window.Telegram.WebApp.startParam || 'none',
-        initDataLength: typeof window.Telegram.WebApp.initData === 'string' ? 
-                        window.Telegram.WebApp.initData.length : 0,
+        startParamAvailable: !!window.Telegram.WebApp.initDataUnsafe.start_param,
+        startParamValue: window.Telegram.WebApp.initDataUnsafe.start_param || 'none',
+        initDataLength: window.Telegram.WebApp.initData?.length || 0,
         hasInitDataUnsafe: !!window.Telegram.WebApp.initDataUnsafe,
         userId: window.Telegram.WebApp.initDataUnsafe?.user?.id || 'none'
       });
@@ -190,8 +183,7 @@ export function getReferrerIdFromURL(): string | null {
       // В Telegram WebApp параметр start передается как часть initData
       // или может быть доступен как startParam
       
-      // @ts-ignore - startParam может быть недоступен в типе, но доступен в реальном API
-      const telegramStartParam = window.Telegram.WebApp.startParam;
+      const telegramStartParam = window.Telegram.WebApp.initDataUnsafe.start_param;
       if (telegramStartParam) {
         console.log('[utils] Found startParam in Telegram WebApp:', telegramStartParam);
         
