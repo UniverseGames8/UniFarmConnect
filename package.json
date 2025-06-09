@@ -27,7 +27,6 @@
     "type-check:client": "cd client && npm run type-check",
     "type-check:server": "cd server && npm run type-check",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky install",
     "pre-commit": "npm run lint && npm run type-check"
   },
   "devDependencies": {
