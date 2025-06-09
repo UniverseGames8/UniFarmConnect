@@ -1,6 +1,6 @@
 import { 
-  TonConnectUI, 
-  // Удалено импорт из @ton/core из-за проблем с Buffer в браузере
+  TonConnectUI,
+  SendTransactionResponse
 } from '@tonconnect/ui-react';
 // Для отладки - логирование операций TonConnect
 const DEBUG_ENABLED = false; // Отключаем debug логи в production
@@ -36,7 +36,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
  * @param comment Текст комментария
  * @returns base64-строка для payload
  */
-function createBocWithComment(comment: string): string {
+export function createBocWithComment(comment: string): string {
   try {
     // Убираем проверку на Buffer, так как мы больше не используем его
     
@@ -149,13 +149,12 @@ export function getTonWalletAddress(tonConnectUI: TonConnectUI): string | null {
   return null;
 }
 
-import { SendTransactionResponse } from '@tonconnect/ui';
-
 interface TransactionRequest {
   validUntil: number;
   messages: Array<{
     address: string;
     amount: string;
+    payload?: string;
   }>;
 }
 
@@ -175,7 +174,15 @@ export const sendTonTransaction = async (
       throw new Error('TON Connect UI is not initialized');
     }
 
-    const result: SendTransactionResponse = await tonConnectUI.sendTransaction(transactionRequest);
+    // Добавляем payload с комментарием к первой транзакции
+    if (transactionRequest.messages.length > 0) {
+      transactionRequest.messages[0].payload = createBocWithComment(comment);
+    }
+
+    const result = await tonConnectUI.sendTransaction({
+      validUntil: transactionRequest.validUntil || Math.floor(Date.now() / 1000) + TX_LIFETIME,
+      messages: transactionRequest.messages
+    });
 
     if (result) {
       return {
@@ -189,6 +196,7 @@ export const sendTonTransaction = async (
       error: 'Transaction failed',
     };
   } catch (error) {
+    console.error('Error sending TON transaction:', error);
     return {
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',

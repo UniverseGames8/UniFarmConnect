@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/contexts/userContext';
 import { useNotification } from '@/contexts/notificationContext';
+import { formatNumberWithPrecision } from '@/utils/formatters';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, Filter } from 'lucide-react';
 
 // Типы транзакций согласно схеме базы данных
 interface Transaction {
@@ -19,13 +22,15 @@ interface Transaction {
   updated_at?: string;
 }
 
+type TransactionFilter = 'ALL' | 'DEPOSIT' | 'WITHDRAWAL' | 'BONUS' | 'REFERRAL';
+
 /**
  * Компонент истории транзакций согласно UX спецификации
  * Отображает все транзакции пользователя с фильтрацией и анимацией
  */
 const TransactionHistory: React.FC = () => {
   // Состояние для активного фильтра
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'UNI' | 'TON'>('ALL');
+  const [filter, setFilter] = useState<TransactionFilter>('ALL');
   
   // Состояние для пагинации
   const [page, setPage] = useState(1);
@@ -45,12 +50,12 @@ const TransactionHistory: React.FC = () => {
     isFetching,
     refetch
   } = useQuery({
-    queryKey: ['/api/transactions', userId, page, limit, activeFilter],
+    queryKey: ['/api/transactions', userId, page, limit, filter],
     queryFn: async () => {
       if (!userId) return { transactions: [], total: 0 };
       
       try {
-        const response = await fetch(`/api/transactions?user_id=${userId}&page=${page}&limit=${limit}&currency=${activeFilter !== 'ALL' ? activeFilter : ''}`, {
+        const response = await fetch(`/api/transactions?user_id=${userId}&page=${page}&limit=${limit}&filter=${filter}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -171,29 +176,35 @@ const TransactionHistory: React.FC = () => {
   };
   
   // Обработчик смены фильтра
-  const handleFilterChange = (filter: 'ALL' | 'UNI' | 'TON') => {
-    setActiveFilter(filter);
+  const handleFilterChange = (newFilter: TransactionFilter) => {
+    setFilter(newFilter);
     setPage(1); // Сбрасываем пагинацию при смене фильтра
     
-    showNotification('info', {
-      message: `Фильтр изменен на ${filter === 'ALL' ? 'Все транзакции' : filter}`,
-      duration: 2000
+    showNotification({
+      type: 'info',
+      message: `Фильтр изменен на ${newFilter === 'ALL' ? 'Все транзакции' : newFilter}`
     });
   };
   
   // Обработчик обновления данных
-  const handleRefresh = () => {
-    showNotification('loading', {
-      message: 'Обновление истории транзакций...',
-      duration: 1500
+  const handleRefresh = async () => {
+    showNotification({
+      type: 'info',
+      message: 'Обновление истории транзакций...'
     });
     
-    refetch().then(() => {
-      showNotification('success', {
-        message: 'История транзакций обновлена',
-        duration: 2000
+    try {
+      await refetch();
+      showNotification({
+        type: 'success',
+        message: 'История транзакций обновлена'
       });
-    });
+    } catch (error) {
+      showNotification({
+        type: 'error',
+        message: 'Ошибка при обновлении истории транзакций'
+      });
+    }
   };
   
   // Обработчик загрузки следующей страницы
@@ -207,171 +218,83 @@ const TransactionHistory: React.FC = () => {
         <div className="text-center text-red-400">
           <i className="fas fa-exclamation-triangle text-2xl mb-2"></i>
           <p>Ошибка загрузки истории транзакций</p>
-          <button 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
-            className="mt-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
+            disabled={isFetching}
           >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             Попробовать снова
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-xl p-5 mb-5 shadow-lg overflow-hidden relative">
-      {/* Неоновая рамка */}
-      <div className="absolute inset-0 rounded-xl border border-primary/30"></div>
-      
-      {/* Заголовок с кнопкой обновления */}
-      <div className="flex items-center justify-between mb-4 relative z-10">
-        <h2 className="text-lg font-semibold text-white flex items-center">
-          <i className="fas fa-history text-primary mr-2"></i>
-          История транзакций
-        </h2>
-        <button 
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">История транзакций</h2>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleRefresh}
           disabled={isFetching}
-          className="text-sm text-gray-400 hover:text-primary transition-colors"
-          title="Обновить историю"
         >
-          <i className={`fas fa-sync-alt ${isFetching ? 'animate-spin' : ''}`}></i>
-        </button>
+          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          Обновить
+        </Button>
       </div>
       
-      {/* Фильтры валют */}
-      <div className="flex space-x-2 mb-4 relative z-10">
-        <button
-          onClick={() => handleFilterChange('ALL')}
-          className={`px-3 py-1 rounded-lg text-xs transition-all duration-200 ${
-            activeFilter === 'ALL'
-              ? 'bg-primary text-white shadow-lg shadow-primary/25'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          Все
-        </button>
-        <button
-          onClick={() => handleFilterChange('UNI')}
-          className={`px-3 py-1 rounded-lg text-xs transition-all duration-200 ${
-            activeFilter === 'UNI'
-              ? 'bg-primary text-white shadow-lg shadow-primary/25'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          UNI
-        </button>
-        <button
-          onClick={() => handleFilterChange('TON')}
-          className={`px-3 py-1 rounded-lg text-xs transition-all duration-200 ${
-            activeFilter === 'TON'
-              ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
-              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-          }`}
-        >
-          TON
-        </button>
+      <div className="flex space-x-2 overflow-x-auto pb-2">
+        {(['ALL', 'DEPOSIT', 'WITHDRAWAL', 'BONUS', 'REFERRAL'] as TransactionFilter[]).map((filterType) => (
+          <Button
+            key={filterType}
+            variant={filter === filterType ? "default" : "outline"}
+            size="sm"
+            onClick={() => handleFilterChange(filterType)}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            {filterType === 'ALL' ? 'Все' : getTypeDescription(filterType as 'deposit' | 'withdrawal' | 'farming_reward' | 'referral_bonus' | 'mission_reward' | 'boost_purchase')}
+          </Button>
+        ))}
       </div>
       
-      {/* Счетчик транзакций */}
-      <div className="text-xs text-gray-400 mb-3 relative z-10">
-        Всего транзакций: {totalTransactions}
-      </div>
-      
-      {/* Список транзакций */}
-      <div className="space-y-3 relative z-10">
         {isLoading ? (
-          // Скелетон для загрузки
-          Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="bg-gray-800/50 rounded-lg p-3">
-              <div className="flex items-center space-x-3">
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <div className="flex-1">
-                  <Skeleton className="w-24 h-4 mb-1" />
-                  <Skeleton className="w-32 h-3" />
-                </div>
-                <div className="text-right">
-                  <Skeleton className="w-16 h-4 mb-1" />
-                  <Skeleton className="w-12 h-3" />
-                </div>
-              </div>
+        <div className="flex justify-center items-center py-8">
+          <RefreshCw className="w-6 h-6 animate-spin" />
             </div>
-          ))
         ) : transactions.length === 0 ? (
-          // Пустое состояние
-          <div className="text-center py-8">
-            <i className="fas fa-inbox text-gray-400 text-3xl mb-3"></i>
-            <p className="text-gray-400">Пока нет транзакций</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Ваши транзакции будут отображаться здесь
-            </p>
+        <div className="text-center py-8 text-muted-foreground">
+          Нет транзакций для отображения
           </div>
         ) : (
-          // Список транзакций
-          transactions.map((transaction: Transaction) => (
+        <div className="space-y-4">
+          {transactions.map((transaction: Transaction) => (
             <div 
               key={transaction.id}
-              className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 hover:border-primary/30 transition-all duration-200 backdrop-blur-sm"
+              className="bg-card rounded-lg p-4 shadow-sm border"
             >
-              <div className="flex items-center justify-between">
-                {/* Левая часть - иконка и информация */}
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-700/50 flex items-center justify-center">
-                    <i className={`${getTransactionIcon(transaction.type)} text-sm`}></i>
-                  </div>
+              <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-white text-sm font-medium">
-                      {getTypeDescription(transaction.type)}
-                    </div>
-                    <div className="text-xs text-gray-400">
+                  <h3 className="font-medium">{getTypeDescription(transaction.type as 'deposit' | 'withdrawal' | 'farming_reward' | 'referral_bonus' | 'mission_reward' | 'boost_purchase')}</h3>
+                  <p className="text-sm text-muted-foreground">
                       {formatDateTime(transaction.created_at)}
-                    </div>
-                    {transaction.description && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {transaction.description}
-                      </div>
-                    )}
-                  </div>
+                  </p>
                 </div>
-                
-                {/* Правая часть - сумма и статус */}
                 <div className="text-right">
-                  <div className="text-white font-medium">
+                  <p className="font-medium">
                     {transaction.type === 'withdrawal' ? '-' : '+'}
                     {formatTransactionAmount(transaction.amount, transaction.currency)} {transaction.currency}
-                  </div>
-                  <div className={`text-xs px-2 py-1 rounded-md inline-block mt-1 ${getStatusColor(transaction.status)}`}>
+                  </p>
+                  <p className={`text-sm ${getStatusColor(transaction.status)}`}>
                     {getStatusText(transaction.status)}
-                  </div>
-                  {transaction.transaction_hash && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {transaction.transaction_hash.substring(0, 8)}...
-                    </div>
-                  )}
+                  </p>
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
-      
-      {/* Кнопка "Загрузить еще" */}
-      {transactions.length > 0 && transactions.length < totalTransactions && (
-        <div className="mt-4 text-center relative z-10">
-          <button
-            onClick={handleLoadMore}
-            disabled={isFetching}
-            className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
-          >
-            {isFetching ? (
-              <>
-                <i className="fas fa-spinner fa-spin mr-2"></i>
-                Загрузка...
-              </>
-            ) : (
-              'Загрузить еще'
-            )}
-          </button>
+          ))}
         </div>
       )}
     </div>

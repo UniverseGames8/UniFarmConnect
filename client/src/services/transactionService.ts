@@ -1,3 +1,5 @@
+import { correctApiRequest } from '@/lib/correctApiRequest';
+
 /**
  * Типы транзакций
  */
@@ -67,14 +69,10 @@ export async function fetchTransactions(
     console.log('[transactionService] Запрос транзакций через correctApiRequest');
     
     // Добавляем поддержку как старого, так и нового пути API
-    const response = await correctApiRequest(`/api/transactions?user_id=${userId}&limit=${limit}&offset=${offset}`, 'GET', null, {
-      additionalLogging: true,
-      errorHandling: {
-        report404: true,
-        detailed: true,
-        traceId: `transactions-${Date.now()}`
-      }
-    });
+    const response = await correctApiRequest<{ transactions: any[] }>(
+      `/api/transactions?user_id=${userId}&limit=${limit}&offset=${offset}`,
+      'GET'
+    );
     
     // Для отладки: вывести полный ответ
     console.log('[transactionService] Полный ответ API:', JSON.stringify(response));
@@ -123,14 +121,10 @@ export async function fetchTonTransactions(
     }
     
     // Делаем прямой запрос на API для получения всех транзакций
-    const response = await correctApiRequest(`/api/transactions?user_id=${userId}&limit=${limit}&offset=${offset}`, 'GET', null, {
-      additionalLogging: true,
-      errorHandling: {
-        report404: true,
-        detailed: true,
-        traceId: `ton-transactions-${Date.now()}`
-      }
-    });
+    const response = await correctApiRequest<{ transactions: any[] }>(
+      `/api/transactions?user_id=${userId}&limit=${limit}&offset=${offset}`,
+      'GET'
+    );
     
     console.log('[transactionService] Получен ответ API для TON транзакций:', JSON.stringify(response));
     

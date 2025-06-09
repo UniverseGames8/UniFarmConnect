@@ -1,12 +1,13 @@
-import { useToast } from "@/hooks/use-toast"
-import {
-  Toast,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/components/ui/toast"
+// ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ СБОРКИ
+// import { useToast } from "@/hooks/use-toast"
+// import {
+//   Toast,
+//   ToastClose,
+//   ToastDescription,
+//   ToastProvider,
+//   ToastTitle,
+//   ToastViewport,
+// } from "@/components/ui/toast"
 
 // Функция для добавления эмодзи к тексту уведомления
 const enhanceToastText = (text: string | React.ReactNode): React.ReactNode => {
@@ -98,35 +99,35 @@ const getEmojiForTitle = (title: string | React.ReactNode): string => {
   return '';
 };
 
-export function Toaster() {
-  const { toasts } = useToast()
-
-  return (
-    <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
-        const emoji = title ? getEmojiForTitle(title) : '';
-        
-        return (
-          <Toast key={id} {...props} className="border-l-4 border-primary group">
-            <div className="grid gap-1">
-              {title && (
-                <ToastTitle className="font-semibold flex items-center">
-                  {emoji && <span className="mr-1">{emoji}</span>}
-                  {title}
-                </ToastTitle>
-              )}
-              {description && (
-                <ToastDescription className="text-sm opacity-90">
-                  {enhanceToastText(description)}
-                </ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
-      <ToastViewport />
-    </ToastProvider>
-  )
-}
+// export function Toaster() {
+//   const { toasts } = useToast()
+//
+//   return (
+//     <ToastProvider>
+//       {toasts.map(function ({ id, title, description, action, ...props }) {
+//         const emoji = title ? getEmojiForTitle(title) : '';
+//         
+//         return (
+//           <Toast key={id} {...props} className="border-l-4 border-primary group">
+//             <div className="grid gap-1">
+//               {title && (
+//                 <ToastTitle className="font-semibold flex items-center">
+//                   {emoji && <span className="mr-1">{emoji}</span>}
+//                   {title}
+//                 </ToastTitle>
+//               )}
+//               {description && (
+//                 <ToastDescription className="text-sm opacity-90">
+//                   {enhanceToastText(description)}
+//                 </ToastDescription>
+//               )}
+//             </div>
+//             {action}
+//             <ToastClose />
+//           </Toast>
+//         )
+//       })}
+//       <ToastViewport />
+//     </ToastProvider>
+//   )
+// }

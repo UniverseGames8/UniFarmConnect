@@ -95,8 +95,6 @@ class QueryErrorBoundary extends Component<Props, State> {
 
           <div className="flex justify-end mt-4">
             <Button 
-              variant="outline" 
-              size="sm" 
               onClick={this.handleReset}
               className="text-xs gap-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >

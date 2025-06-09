@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { useWebSocket } from '@/contexts/webSocketContext';
+import { useWebSocket } from '@/shared/context/WebSocketContext';
 import { 
   Alert,
   AlertTitle,
@@ -15,15 +15,13 @@ type AlertType = 'online' | 'offline' | 'wsConnected' | 'wsDisconnected' | 'hidd
  * Показывает уведомление при потере соединения
  */
 export const NetworkStatusIndicator: React.FC = () => {
-  const [isOffline, setIsOffline] = useState<boolean>(!navigator.onLine);
   const [alertType, setAlertType] = useState<AlertType>('hidden');
   const [alertVisible, setAlertVisible] = useState<boolean>(false);
-  const { connectionStatus } = useWebSocket();
+  const { isConnected } = useWebSocket();
 
   // Обновляем статус онлайн/оффлайн
   useEffect(() => {
     const handleOnline = () => {
-      setIsOffline(false);
       setAlertType('online');
       setAlertVisible(true);
       
@@ -34,7 +32,6 @@ export const NetworkStatusIndicator: React.FC = () => {
     };
 
     const handleOffline = () => {
-      setIsOffline(true);
       setAlertType('offline');
       setAlertVisible(true);
     };
@@ -50,7 +47,7 @@ export const NetworkStatusIndicator: React.FC = () => {
 
   // Обновляем статус WebSocket соединения
   useEffect(() => {
-    if (connectionStatus === 'connected') {
+    if (isConnected) {
       setAlertType('wsConnected');
       setAlertVisible(true);
       
@@ -58,13 +55,11 @@ export const NetworkStatusIndicator: React.FC = () => {
       setTimeout(() => {
         setAlertVisible(false);
       }, 3000);
-    } else if (connectionStatus === 'disconnected') {
+    } else {
       setAlertType('wsDisconnected');
       setAlertVisible(true);
-    } else {
-      // Если статус 'connecting', не показываем уведомление
     }
-  }, [connectionStatus]);
+  }, [isConnected]);
 
   // Если нет проблем с соединением, ничего не показываем
   if (!alertVisible) {
@@ -109,7 +104,6 @@ export const NetworkStatusIndicator: React.FC = () => {
   return (
     <div className="fixed top-16 left-0 right-0 z-50 mx-auto w-full max-w-md px-4">
       <Alert 
-        variant={variant === 'default' ? 'default' : 'destructive'}
         className={cn(
           "border shadow-lg transition-opacity duration-300",
           alertType === 'online' || alertType === 'wsConnected' ? 'bg-green-50 dark:bg-green-950' : '',

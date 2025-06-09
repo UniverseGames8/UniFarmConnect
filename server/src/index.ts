@@ -1,10 +1,10 @@
 import express from 'express';
-import cors from 'cors';
 import { config } from './config';
 import { db } from './db';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { errorHandler } from './middleware/errorHandler';
 import { telegramAuthMiddleware } from './middleware/telegramAuth';
+import { corsOptions } from './config/cors';
 const apiPrefix = config.apiPrefix;
 
 // Импорт маршрутов
@@ -18,14 +18,18 @@ import boostRoutes from './routes/boostRoutes';
 import adminRoutes from './routes/adminRoutes';
 import telegramRoutes from './routes/telegramRoutes';
 import authRoutes from './routes/authRoutes';
+import healthRoutes from './routes/health';
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(telegramAuthMiddleware);
+
+// Health check (без middleware аутентификации)
+app.use('/api/v2', healthRoutes);
 
 // API v2 маршруты
 app.use(`${apiPrefix}/auth`, authRoutes);

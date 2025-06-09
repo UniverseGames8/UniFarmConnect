@@ -1,84 +1,7 @@
-
 /**
  * Сервис для работы с Telegram WebApp API
  * Обработка initData, пользовательских данных и интеграции с Mini App
  */
-
-interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-}
-
-interface TelegramWebApp {
-  initData: string;
-  initDataUnsafe: {
-    user?: TelegramUser;
-    start_param?: string;
-    auth_date?: number;
-    hash?: string;
-  };
-  version: string;
-  platform: string;
-  colorScheme: 'light' | 'dark';
-  themeParams: Record<string, string>;
-  isExpanded: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
-  headerColor: string;
-  backgroundColor: string;
-  isClosingConfirmationEnabled: boolean;
-  ready: () => void;
-  expand: () => void;
-  close: () => void;
-  MainButton: {
-    text: string;
-    color: string;
-    textColor: string;
-    isVisible: boolean;
-    isActive: boolean;
-    isProgressVisible: boolean;
-    setText: (text: string) => void;
-    onClick: (callback: () => void) => void;
-    show: () => void;
-    hide: () => void;
-    enable: () => void;
-    disable: () => void;
-    showProgress: (leaveActive?: boolean) => void;
-    hideProgress: () => void;
-  };
-  BackButton: {
-    isVisible: boolean;
-    onClick: (callback: () => void) => void;
-    show: () => void;
-    hide: () => void;
-  };
-  HapticFeedback: {
-    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
-    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
-    selectionChanged: () => void;
-  };
-  CloudStorage: {
-    setItem: (key: string, value: string, callback?: (error: string | null, success: boolean) => void) => void;
-    getItem: (key: string, callback: (error: string | null, value: string | null) => void) => void;
-    getItems: (keys: string[], callback: (error: string | null, values: Record<string, string> | null) => void) => void;
-    removeItem: (key: string, callback?: (error: string | null, success: boolean) => void) => void;
-    removeItems: (keys: string[], callback?: (error: string | null, success: boolean) => void) => void;
-    getKeys: (callback: (error: string | null, keys: string[] | null) => void) => void;
-  };
-  sendData: (data: string) => void;
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
-}
 
 class TelegramService {
   private webApp: TelegramWebApp | null = null;
@@ -92,13 +15,11 @@ class TelegramService {
    * Инициализация Telegram WebApp
    */
   private initialize(): void {
-    // Проверяем доступность в браузере
     if (typeof window === 'undefined') {
       console.log('[telegramService] Окружение не браузер');
       return;
     }
 
-    // Ждем полной загрузки Telegram WebApp
     const initTelegram = () => {
       if (window.Telegram?.WebApp) {
         this.webApp = window.Telegram.WebApp;
@@ -106,22 +27,20 @@ class TelegramService {
         this.initialized = true;
         console.log('[telegramService] Telegram WebApp успешно инициализирован');
         
-        // Расширяем приложение
-        this.webApp.expand();
+        if (this.webApp) {
+          this.webApp.expand();
+        }
       } else {
         console.log('[telegramService] Telegram WebApp недоступен, работаем в fallback режиме');
       }
     };
 
-    // Если Telegram уже доступен - инициализируем сразу
     if (window.Telegram?.WebApp) {
       initTelegram();
     } else {
-      // Иначе ждем события загрузки
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initTelegram);
       } else {
-        // Документ уже загружен, пытаемся через небольшую задержку
         setTimeout(initTelegram, 100);
       }
     }
@@ -137,36 +56,36 @@ class TelegramService {
   /**
    * Получение данных пользователя
    */
-  getUser(): TelegramUser | null {
-    if (!this.isAvailable()) {
+  getUser(): { id: number; first_name?: string; last_name?: string; username?: string; language_code?: string } | null {
+    if (!this.isAvailable() || !this.webApp) {
       console.log('[telegramService] WebApp недоступен для получения пользователя');
       return null;
     }
-    
-    return this.webApp!.initDataUnsafe.user || null;
+    return this.webApp.initDataUnsafe.user || null;
   }
 
   /**
    * Получение initData для отправки на сервер
    */
   getInitData(): string {
-    if (!this.isAvailable()) {
+    if (!this.isAvailable() || !this.webApp) {
       console.log('[telegramService] WebApp недоступен для получения initData');
       return '';
     }
     
-    return this.webApp!.initData || '';
+    return this.webApp.initData || '';
   }
 
   /**
    * Получение start параметра
    */
   getStartParam(): string | null {
-    if (!this.isAvailable()) {
+    if (!this.isAvailable() || !this.webApp) {
       return null;
     }
-    
-    return this.webApp!.initDataUnsafe.start_param || null;
+    // В глобальном типе нет start_param, используем query_id
+    // Убедимся, что возвращаем строку, а не null, если query_id отсутствует
+    return this.webApp.initDataUnsafe.query_id || '';
   }
 
   /**
@@ -201,7 +120,7 @@ class TelegramService {
    * Получение информации о среде
    */
   getEnvironmentInfo() {
-    if (!this.isAvailable()) {
+    if (!this.isAvailable() || !this.webApp) {
       return {
         platform: 'unknown',
         version: '0.0',
@@ -211,12 +130,12 @@ class TelegramService {
     }
 
     return {
-      platform: this.webApp!.platform,
-      version: this.webApp!.version,
-      colorScheme: this.webApp!.colorScheme,
-      viewportHeight: this.webApp!.viewportHeight,
-      viewportStableHeight: this.webApp!.viewportStableHeight,
-      isExpanded: this.webApp!.isExpanded,
+      platform: this.webApp.platform,
+      version: this.webApp.version,
+      colorScheme: this.webApp.colorScheme,
+      viewportHeight: this.webApp.viewportHeight,
+      viewportStableHeight: this.webApp.viewportStableHeight,
+      isExpanded: this.webApp.isExpanded,
       isInIframe: window.self !== window.top,
       userAgent: navigator.userAgent
     };
@@ -226,8 +145,8 @@ class TelegramService {
    * Расширение WebApp
    */
   expand(): void {
-    if (this.isAvailable()) {
-      this.webApp!.expand();
+    if (this.isAvailable() && this.webApp) {
+      this.webApp.expand();
     }
   }
 
@@ -235,8 +154,8 @@ class TelegramService {
    * Закрытие WebApp
    */
   close(): void {
-    if (this.isAvailable()) {
-      this.webApp!.close();
+    if (this.isAvailable() && this.webApp) {
+      this.webApp.close();
     }
   }
 
@@ -244,8 +163,8 @@ class TelegramService {
    * Отправка данных родительскому окну
    */
   sendData(data: any): void {
-    if (this.isAvailable()) {
-      this.webApp!.sendData(JSON.stringify(data));
+    if (this.isAvailable() && this.webApp) {
+      this.webApp.sendData(JSON.stringify(data));
     }
   }
 

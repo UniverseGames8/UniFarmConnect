@@ -22,13 +22,22 @@
     "test:server": "cd server && npm run test",
     "lint": "npm run lint:client && npm run lint:server",
     "lint:client": "cd client && npm run lint",
-    "lint:server": "cd server && npm run lint"
+    "lint:server": "cd server && npm run lint",
+    "type-check": "npm run type-check:client && npm run type-check:server",
+    "type-check:client": "cd client && npm run type-check",
+    "type-check:server": "cd server && npm run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky install",
+    "pre-commit": "npm run lint && npm run type-check"
   },
   "devDependencies": {
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
     "concurrently": "^8.2.2",
-    "vite": "^6.3.5"
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.2.5",
+    "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -36,7 +45,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "drizzle-zod": "^0.8.2",
     "zod": "^3.25.56"
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/apiService';
 import { BOOST_PACKAGES } from '@/lib/constants';
@@ -24,26 +24,20 @@ const BoostOptions: React.FC = () => {
   const [animateYield, setAnimateYield] = useState<boolean>(false);
   
   // Получаем данные о boost-пакетах
-  const { data: boostPackages } = useQuery<BoostPackage[]>({
+  const { data: boostPackages } = useQuery({
     queryKey: ['boostPackages'],
     queryFn: async () => {
-      const response = await apiGet<{ success: boolean; data: BoostPackage[] }>('/api/v2/boost/packages');
-      if (!response.success) {
-        throw new Error('Failed to fetch boost packages');
-      }
-      return response.data;
+      const response = await apiGet('/api/v2/boost/packages');
+      return response?.data as BoostPackage[];
     }
   });
   
   // Получаем данные о текущем доходе
-  const { data: farmingYield } = useQuery<FarmingYield>({
+  const { data: farmingYield } = useQuery({
     queryKey: ['farmingYield'],
     queryFn: async () => {
-      const response = await apiGet<{ success: boolean; data: FarmingYield }>('/api/v2/farming/yield');
-      if (!response.success) {
-        throw new Error('Failed to fetch farming yield');
-      }
-      return response.data;
+      const response = await apiGet('/api/v2/farming/yield');
+      return response?.data as FarmingYield;
     },
     refetchInterval: 2000, // Обновляем каждые 2 секунды
   });
@@ -182,7 +176,7 @@ const BoostOptions: React.FC = () => {
         </div>
       </div>
       
-      {(boostPackages || BOOST_PACKAGES).map((pack) => (
+      {(boostPackages || BOOST_PACKAGES).map((pack: BoostPackage) => (
         <div 
           key={pack.id}
           className={`
@@ -248,8 +242,9 @@ const BoostOptions: React.FC = () => {
               
               {/* Price */}
               <div>
-                <div className="text-xs text-gray-400 mb-1">Стоимость:</div>
-                <div className="font-medium text-cyan-400">
+                <div className="text-xs text-gray-400 mb-1">Price:</div>
+                <div className="font-medium text-white flex items-center">
+                  <i className="fas fa-coins mr-1 text-amber-400 text-xs"></i>
                   {pack.price}
                 </div>
               </div>
