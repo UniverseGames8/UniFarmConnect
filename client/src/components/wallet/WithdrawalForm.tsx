@@ -91,9 +91,9 @@ const WithdrawalForm: React.FC = () => {
     clearErrors();
     setErrorMessage(null);
     
-    showNotification('info', {
-      message: `Переключено на ${currency}`,
-      duration: 2000
+    showNotification({
+      type: 'info',
+      message: `Переключено на ${currency}`
     });
   };
   
@@ -133,9 +133,9 @@ const WithdrawalForm: React.FC = () => {
       setSubmitState(SubmitState.SUCCESS);
       
       // Показываем уведомление об успешной отправке
-      showNotification('success', {
-        message: `Заявка на вывод ${data.amount} ${selectedCurrency} создана успешно!`,
-        duration: 5000
+      showNotification({
+        type: 'success',
+        message: `Заявка на вывод ${data.amount} ${selectedCurrency} создана успешно!`
       });
       
       // Очищаем форму после успешной отправки
@@ -157,9 +157,9 @@ const WithdrawalForm: React.FC = () => {
       setErrorMessage(errorMsg);
       setSubmitState(SubmitState.ERROR);
       
-      showNotification('error', {
-        message: `Ошибка создания заявки: ${errorMsg}`,
-        duration: 5000
+      showNotification({
+        type: 'error',
+        message: `Ошибка создания заявки: ${errorMsg}`
       });
       
       // Сбрасываем состояние ошибки через 5 секунд

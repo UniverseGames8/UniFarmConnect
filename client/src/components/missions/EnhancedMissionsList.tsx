@@ -110,25 +110,22 @@ const EnhancedMissionsList: React.FC = () => {
           : (result.reward || 0);
         
         // Показываем улучшенное уведомление об успехе с эмодзи
-        showNotification('success', {
-          message: `✅ ${missionTitle} выполнена! Получено ${reward} UNI`,
-          duration: 4000,
-          autoDismiss: true
+        showNotification({
+          type: 'success',
+          message: `✅ ${missionTitle} выполнена! Получено ${reward} UNI`
         });
       } else {
         // Показываем ошибку с подробностями
-        showNotification('error', {
-          message: `❌ Не удалось выполнить миссию "${missionTitle}": ${result?.message || 'Неизвестная ошибка'}`,
-          duration: 5000,
-          autoDismiss: true
+        showNotification({
+          type: 'error',
+          message: `❌ Не удалось выполнить миссию "${missionTitle}": ${result?.message || 'Неизвестная ошибка'}`
         });
       }
     } catch (error: any) {
       // Показываем ошибку сети или сервера
-      showNotification('error', {
-        message: `🔥 Ошибка при выполнении миссии: ${error.message || 'Проблема с подключением'}`,
-        duration: 5000,
-        autoDismiss: true
+      showNotification({
+        type: 'error',
+        message: `🔥 Ошибка при выполнении миссии: ${error.message || 'Проблема с подключением'}`
       });
       console.error('[EnhancedMissionsList] Ошибка выполнения миссии:', error);
     }

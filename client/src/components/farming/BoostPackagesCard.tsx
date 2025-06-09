@@ -26,6 +26,12 @@ interface PaymentTransaction {
   paymentMethod: 'internal_balance' | 'external_wallet';
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
 interface BoostPackagesCardProps {
   userData?: any;
 }
@@ -138,7 +144,7 @@ const BoostPackagesCard: React.FC<BoostPackagesCardProps> = ({ userData }) => {
         setErrorMessage(null);
         setSuccessMessage(null);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: ApiResponse<any>) => {
         if (data.success) {
           if (data.data.paymentMethod === 'internal_balance') {
             setSuccessMessage(data.message || 'Буст успешно приобретен!');

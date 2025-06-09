@@ -298,9 +298,9 @@ const UniFarmingCard: React.FC<UniFarmingCardProps> = ({ userData }) => {
         setError(null);
 
         // Показываем уведомление об успешном создании депозита
-        showNotification('success', {
-          message: 'Ваш депозит успешно размещен в фарминге UNI и начал приносить доход!',
-          duration: 5000
+        showNotification({
+          type: 'success',
+          message: 'Успешно застейкано!'
         });
 
         // Обновляем контекст пользователя для обновления баланса без перезагрузки

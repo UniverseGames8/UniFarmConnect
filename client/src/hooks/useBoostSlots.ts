@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '@/lib/apiService';
-import { ApiResponse } from '@/types/api';
 
 interface BoostSlot {
   id: number;
@@ -14,7 +13,7 @@ export const useBoostSlots = () => {
   return useQuery({
     queryKey: ['boostSlots'],
     queryFn: async (): Promise<BoostSlot[]> => {
-      const response = await apiGet<ApiResponse<BoostSlot[]>>('/api/v2/boosts/slots');
+      const response = await apiGet<BoostSlot[]>('/api/v2/boosts/slots');
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to fetch boost slots');
       }

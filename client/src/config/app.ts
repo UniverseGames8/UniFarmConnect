@@ -5,6 +5,9 @@ export const APP_CONFIG = {
     BASE_URL: process.env.NODE_ENV === 'production' 
       ? 'https://your-domain.replit.app' 
       : 'http://localhost:3000',
+    WS_URL: process.env.NODE_ENV === 'production'
+      ? 'wss://your-domain.replit.app'
+      : 'ws://localhost:3000',
     ENDPOINTS: {
       AUTH: '/api/v2/auth',
       USER: '/api/v2/users',

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Notification as NotificationType } from '@/types/notification';
+import { Notification as NotificationType } from '@/contexts/notificationContext';
 
 interface NotificationProps {
   notification: NotificationType;
@@ -7,18 +7,16 @@ interface NotificationProps {
 }
 
 const Notification: React.FC<NotificationProps> = ({ notification, onDismiss }) => {
-  const { id, type, message, duration, autoDismiss } = notification;
+  const { id, type, message } = notification;
   
-  // Автоматически скрываем уведомление через duration, если autoDismiss = true
+  // Автоматически скрываем уведомление через 5 секунд
   useEffect(() => {
-    if (autoDismiss && duration) {
-      const timer = setTimeout(() => {
-        onDismiss(id);
-      }, duration);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [id, duration, autoDismiss, onDismiss]);
+    const timer = setTimeout(() => {
+      onDismiss(id);
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [id, onDismiss]);
   
   // Выбираем цвет фона, иконку и эмодзи в зависимости от типа уведомления
   const getTypeStyles = () => {

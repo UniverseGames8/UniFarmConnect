@@ -83,32 +83,24 @@ export async function apiService<T = any>(
   options: ApiRequestOptions = {}
 ): Promise<ApiResponse<T>> {
   try {
-    // Используем correctApiRequest для выполнения запроса
     const result = await correctApiRequest<ApiResponse<T>>(
       endpoint,
       options.method || 'GET',
       options.body ? fixRequestBody(options.body) : undefined
     );
 
-    // Проверяем и нормализуем ответ
-    if (result === null || result === undefined) {
+    if (!result) {
       return {
         success: false,
         error: 'Получен пустой ответ от сервера',
-        data: null as any
+        data: undefined
       };
-    }
-
-    // Если ответ не содержит поле success, добавляем его на основе наличия поля error
-    if (result.success === undefined) {
-      result.success = !result.error;
     }
 
     return result;
   } catch (error: any) {
     console.error('[apiService] Ошибка при выполнении запроса к', endpoint, ':', error);
 
-    // Формируем структурированный ответ с ошибкой
     return {
       success: false,
       error: error?.message || 'Неизвестная ошибка при запросе к API',
@@ -117,7 +109,8 @@ export async function apiService<T = any>(
       errorDetails: error instanceof Error ? {
         name: error.name,
         stack: error.stack?.split('\n').slice(0, 3).join('\n')
-      } : String(error)
+      } : String(error),
+      data: undefined
     };
   }
 }

@@ -2,14 +2,14 @@
  * Централизованная конфигурация системы UniFarm
  */
 
-import { appConfig } from '../../config/app';
-import { databaseConfig } from '../../config/database';
-import { telegramConfig } from '../../config/telegram';
+import { APP_CONFIG } from '../../config/app';
+import { DATABASE_CONFIG } from '../../config/database';
+import { TELEGRAM_CONFIG } from '../../config/telegram';
 
 export const config = {
-  app: appConfig,
-  database: databaseConfig,
-  telegram: telegramConfig,
+  app: APP_CONFIG,
+  database: DATABASE_CONFIG,
+  telegram: TELEGRAM_CONFIG,
   
   // Настройки сервера
   server: {

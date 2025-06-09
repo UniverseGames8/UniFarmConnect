@@ -16,12 +16,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: false,
+    sourcemap: process.env.NODE_ENV === 'development',
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: process.env.NODE_ENV === 'production',
+        pure_funcs: process.env.NODE_ENV === 'production' ? ['console.log', 'console.info'] : []
       }
     },
     rollupOptions: {
@@ -29,7 +30,9 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-toast'],
-          utils: ['date-fns', 'zod', 'zustand']
+          utils: ['date-fns', 'zod', 'zustand'],
+          charts: ['recharts', 'd3'],
+          animations: ['framer-motion', 'react-spring']
         }
       }
     }
@@ -37,12 +40,23 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    host: true
+    host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/ws': {
+        target: 'ws://localhost:3000',
+        ws: true
+      }
+    }
   },
   optimizeDeps: {
     include: ['@types/node']
   },
   define: {
-    // 'process.env': process.env // Удалено ради безопасности
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
   }
 });

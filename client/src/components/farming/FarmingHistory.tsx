@@ -77,6 +77,9 @@ const FarmingHistory: React.FC<FarmingHistoryProps> = ({ userId }) => {
   const [activeTab, setActiveTab] = useState('ton');
   const [opacity, setOpacity] = useState(0);
   const [translateY, setTranslateY] = useState(20);
+  const [isLoading, setIsLoading] = useState(false);
+  const [farmingHistory, setFarmingHistory] = useState<FarmingHistory[]>([]);
+  const [deposits, setDeposits] = useState<FarmingDeposit[]>([]);
   
   // Убеждаемся, что userId определен
   const validUserId = userId || 1;
@@ -1584,18 +1587,20 @@ const FarmingHistory: React.FC<FarmingHistoryProps> = ({ userId }) => {
   const handleRefresh = async () => {
     try {
       setIsLoading(true);
-      
-      // Параллельно обновляем все данные
-      await Promise.all([
-        refetchTransactions(),
-        refetchTonBoosts(),
-        refetchFarming()
+      const [historyResult, depositsResult] = await Promise.all([
+        correctApiRequest<any>(`/api/v2/transactions?user_id=${validUserId}`, 'GET'),
+        correctApiRequest<any>(`/api/v2/ton-farming/active?user_id=${validUserId}`, 'GET')
       ]);
-      
-      // Данные будут автоматически обработаны через useEffect,
-      // когда обновятся transactionsResponse, activeTonBoostsResponse и uniFarmingResponse
-    } catch (err) {
-      console.error("Ошибка обновления данных:", err);
+
+      const historyItems = historyResult.data?.transactions || [];
+      const farmingDeposits = depositsResult.data || [];
+
+      setFarmingHistory(historyItems);
+      setDeposits(farmingDeposits);
+    } catch (error) {
+      console.error('[ERROR] FarmingHistory - Ошибка при обновлении данных:', error);
+      setFarmingHistory([]);
+      setDeposits([]);
     } finally {
       setIsLoading(false);
     }

@@ -1,0 +1,13 @@
+// client/src/core/config/index.ts - удалить или заменить на:
+export const config = {
+  apiUrl: import.meta.env.VITE_API_URL,
+  wsUrl: import.meta.env.VITE_WS_URL,
+  botUsername: import.meta.env.VITE_TELEGRAM_BOT_USERNAME,
+  webAppUrl: import.meta.env.VITE_TELEGRAM_WEBAPP_URL,
+  projectName: import.meta.env.VITE_PROJECT_NAME
+};
+
+// client/src/core/db.ts - удалить, так как это серверная логика
+
+// client/src/core/middleware/auth.ts - удалить или заменить на:
+const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;

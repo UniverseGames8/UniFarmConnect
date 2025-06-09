@@ -56,7 +56,15 @@ export function useTelegram() {
     if (tg) {
       tg.ready();
       setIsReady(true);
-      setUser(tg.initDataUnsafe.user || null);
+      if (tg.initDataUnsafe.user) {
+        setUser({
+          id: tg.initDataUnsafe.user.id,
+          first_name: tg.initDataUnsafe.user.first_name,
+          last_name: tg.initDataUnsafe.user.last_name,
+          username: tg.initDataUnsafe.user.username,
+          language_code: tg.initDataUnsafe.user.language_code
+        });
+      }
       setInitData(tg.initData);
       
       // Expand the app to full height

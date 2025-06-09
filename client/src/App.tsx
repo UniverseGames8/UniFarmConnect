@@ -8,7 +8,6 @@ import { Dashboard } from '@/modules/dashboard/pages/Dashboard';
 import { Farming } from '@/modules/farming/pages/Farming';
 import { Missions } from '@/modules/missions/pages/Missions';
 import { Wallet } from '@/modules/wallet/pages/Wallet';
-import { Testing } from '@/modules/testing/pages/Testing';
 
 const NotFound = () => <div>404 - Страница не найдена</div>;
 
@@ -29,7 +28,6 @@ const App = () => {
                   <Route path="/farming" element={<Farming />} />
                   <Route path="/missions" element={<Missions />} />
                   <Route path="/wallet" element={<Wallet />} />
-                  <Route path="/testing" element={<Testing />} />
                 </Route>
 
                 {/* Редирект с корня на дашборд */}

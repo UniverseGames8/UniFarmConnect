@@ -8,6 +8,7 @@ interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  message?: string;
 }
 
 interface RequestConfig {
@@ -21,7 +22,7 @@ export async function correctApiRequest<T = any>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   data?: any
-): Promise<ApiResponse<T>> {
+): Promise<T> {
   try {
     // Получаем полный URL
     const fullUrl = url.startsWith('http') ? url : apiConfig.getFullUrl(url);
@@ -31,7 +32,7 @@ export async function correctApiRequest<T = any>(
 
     // Выполняем запрос
     const response = await fetch(fullUrl, {
-    method,
+      method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include'
@@ -48,10 +49,7 @@ export async function correctApiRequest<T = any>(
     return result;
   } catch (error: any) {
     console.error('API request error:', error);
-    return {
-      success: false,
-      error: error.message || 'Unknown error occurred'
-    };
+    throw error;
   }
 }
 
